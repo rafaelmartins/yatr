@@ -13,7 +13,7 @@ func main() {
 		log.Fatalln("error: Target not provided")
 	}
 
-	conf, err := ConfigRead(".yatr.yaml")
+	conf, err := ConfigRead(".yatr.yml")
 	if err != nil {
 		log.Fatal(err)
 	}

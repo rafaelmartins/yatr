@@ -1,9 +1,0 @@
----
-targets:
-    dist-linux-amd64:
-        task_args:
-            - config.go
-            - main.go
-            - runners_autotools.go
-            - runners.go
-            - runners_golang.go
