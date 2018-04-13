@@ -14,9 +14,7 @@ func main() {
 	}
 
 	conf, err := ConfigRead(".yatr.yml")
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	target := conf.Targets[targetName]
 
 	dir, err := os.Getwd()
