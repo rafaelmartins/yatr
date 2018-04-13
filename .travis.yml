@@ -1,5 +1,10 @@
 language: go
 go:
     - "1.10"
+
+env:
+    - TARGET=dist-linux-amd64
+
 script:
     - go build -x -v
+    - ./yatr
