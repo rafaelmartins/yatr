@@ -20,12 +20,12 @@ type Target struct {
 func ConfigRead(filename string) (*Config, error) {
 	configContent, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return &Config{}, err
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(configContent, &config); err != nil {
-		return nil, err
+		return &Config{}, err
 	}
 	return &config, nil
 }
