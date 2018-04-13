@@ -1,0 +1,13 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "gopkg.in/yaml.v2",
+			"repository": "https://gopkg.in/yaml.v2",
+			"vcs": "git",
+			"revision": "5420a8b6744d3b0345ab293f6fcba19c978f1183",
+			"branch": "master",
+			"notests": true
+		}
+	]
+}
