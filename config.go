@@ -13,8 +13,9 @@ type config struct {
 }
 
 type target struct {
-	configureArgs []string `yaml:"configure_args"`
-	taskArgs      []string `yaml:"task_args"`
+	configureArgs   []string          `yaml:"configure_args"`
+	taskArgs        []string          `yaml:"task_args"`
+	publisherParams map[string]string `yaml:"publisher_params"`
 }
 
 func configRead(filename string) (*config, error) {

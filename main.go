@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path"
@@ -13,6 +12,10 @@ func main() {
 		log.Fatalln("error: Target not provided")
 	}
 
+	if os.Getenv("TRAVIS") != "true" {
+		log.Fatalln("error: This tool only supports Travis-CI")
+	}
+
 	conf, _ := configRead(".yatr.yml")
 
 	target := conf.targets[targetName]
@@ -22,21 +25,30 @@ func main() {
 		log.Fatal(err)
 	}
 
-	runner, rctx, err := getRunner(targetName, dir, path.Join(dir, "build"))
+	run, rctx, err := getRunner(targetName, dir, path.Join(dir, "build"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	configureArgs := append(conf.defaultConfigureArgs, target.configureArgs...)
-	if err := runner.configure(rctx, configureArgs); err != nil {
+	if err := run.configure(rctx, configureArgs); err != nil {
 		log.Fatal(err)
 	}
 
 	taskArgs := append(conf.defaultTaskArgs, target.taskArgs...)
-	bctx, err := runner.task(rctx, taskArgs)
+	bctx, err := run.task(rctx, taskArgs)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(bctx)
+	pub, err := getPublisher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if pub != nil {
+		if err := pub.publish(rctx, bctx, target.publisherParams); err != nil {
+			log.Fatal(err)
+		}
+	}
 }

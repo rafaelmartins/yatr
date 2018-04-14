@@ -5,6 +5,7 @@ go:
 env:
     - TARGET=distcheck
     - TARGET=dist-linux-amd64
+    - TARGET=dist-darwin-amd64
 
 script:
     - go build -x -v
