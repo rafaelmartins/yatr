@@ -3,6 +3,7 @@ go:
     - "1.10"
 
 env:
+    - TARGET=distcheck
     - TARGET=dist-linux-amd64
 
 script:
