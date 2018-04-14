@@ -53,7 +53,7 @@ func (r *golangRunner) configure(ctx *runnerCtx, args []string) error {
 	return nil
 }
 
-func (r *golangRunner) task(ctx *runnerCtx, args []string) ([]string, error) {
+func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 	var goTool string
 	if ctx.targetName == "distcheck" {
 		goTool = "test"
@@ -196,5 +196,5 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) ([]string, error) {
 		builtFiles = append(builtFiles, archives...)
 	}
 
-	return builtFiles, nil
+	return &buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
 }

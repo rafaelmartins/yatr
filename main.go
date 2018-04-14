@@ -22,21 +22,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	runner, ctx, err := getRunner(targetName, dir, path.Join(dir, "build"))
+	runner, rctx, err := getRunner(targetName, dir, path.Join(dir, "build"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	configureArgs := append(conf.defaultConfigureArgs, target.configureArgs...)
-	if err := runner.configure(ctx, configureArgs); err != nil {
+	if err := runner.configure(rctx, configureArgs); err != nil {
 		log.Fatal(err)
 	}
 
 	taskArgs := append(conf.defaultTaskArgs, target.taskArgs...)
-	builtFiles, err := runner.task(ctx, taskArgs)
+	bctx, err := runner.task(rctx, taskArgs)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(builtFiles)
+	fmt.Println(bctx)
 }

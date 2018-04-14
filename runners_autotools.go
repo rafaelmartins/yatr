@@ -2,13 +2,52 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 )
 
+var autotoolsDistExts = []string{
+	"tar.gz",
+	"tar.bz2",
+	"tar.xz",
+	"zip",
+	"lzip",
+}
+
+var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"](.*)['"]`)
+
 type autotoolsRunner struct{}
+
+func configLogGetNameVersion(ctx *runnerCtx) (string, string) {
+	name := "UNKNOWN"
+	version := "UNKNOWN"
+
+	content, err := ioutil.ReadFile(filepath.Join(ctx.buildDir, "config.log"))
+	if err != nil {
+		return name, version
+	}
+
+	matches := configLogNameVersion.FindAllStringSubmatch(string(content), -1)
+	if matches == nil {
+		return name, version
+	}
+
+	for _, match := range matches {
+		if match[1] == "TARNAME" {
+			name = match[2]
+		} else if match[1] == "VERSION" {
+			version = match[2]
+		}
+	}
+
+	return name, version
+}
 
 func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	cmd := exec.Command("autoreconf", "--warnings=all", "--install", "--force")
@@ -46,9 +85,9 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	return nil
 }
 
-func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) ([]string, error) {
+func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
-	makeArgs := append([]string{jobs}, args...)
+	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
 	cmd := exec.Command("make", makeArgs...)
 	cmd.Dir = ctx.buildDir
 	cmd.Stdout = os.Stdout
@@ -58,6 +97,33 @@ func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) ([]string, error) 
 		return nil, err
 	}
 
-	// FIXME: return list of built distfiles
-	return nil, nil
+	buildName, buildVersion := configLogGetNameVersion(ctx)
+
+	var candidates []string
+	files, err := ioutil.ReadDir(ctx.buildDir)
+	if err != nil {
+		return nil, err
+	}
+	for _, fileInfo := range files {
+		if !fileInfo.Mode().IsRegular() {
+			continue
+		}
+		if !strings.HasPrefix(fileInfo.Name(), fmt.Sprintf("%s-", buildName)) {
+			continue
+		}
+		candidates = append(candidates, fileInfo.Name())
+	}
+
+	var builtFiles []string
+
+	for _, ext := range autotoolsDistExts {
+		suffix := fmt.Sprintf("%s.%s", buildVersion, ext)
+		for _, candidate := range candidates {
+			if strings.HasSuffix(candidate, suffix) {
+				builtFiles = append(builtFiles, candidate)
+			}
+		}
+	}
+
+	return &buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
 }

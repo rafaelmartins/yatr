@@ -21,7 +21,7 @@ type buildCtx struct {
 
 type runner interface {
 	configure(ctx *runnerCtx, args []string) error
-	task(ctx *runnerCtx, args []string) ([]string, error)
+	task(ctx *runnerCtx, args []string) (*buildCtx, error)
 }
 
 func getRunner(targetName string, srcDir string, buildDir string) (runner, *runnerCtx, error) {
