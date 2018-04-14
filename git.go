@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func GitVersion(repoDir string) string {
+func gitVersion(repoDir string) string {
 	var out bytes.Buffer
 	cmd := exec.Command("git", "describe", "--abbrev=4", "HEAD")
 	cmd.Dir = repoDir
@@ -32,7 +32,7 @@ func GitVersion(repoDir string) string {
 	return strings.Trim(version, " \t\n")
 }
 
-func GitArchive(name string, repoDir string, outputDir string) ([]string, error) {
+func gitArchive(name string, repoDir string, outputDir string) ([]string, error) {
 	var archives []string
 	prefix := fmt.Sprintf("%s/", name)
 	for _, format := range []string{"tar", "zip"} {
@@ -49,7 +49,7 @@ func GitArchive(name string, repoDir string, outputDir string) ([]string, error)
 		ext := format
 		if format == "tar" {
 			var err error
-			archiveContent, err = CompressGzip(archiveContent)
+			archiveContent, err = compressGzip(archiveContent)
 			if err != nil {
 				return nil, err
 			}

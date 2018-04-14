@@ -19,7 +19,7 @@ var readmeFiles = []string{
 	"README.md",
 }
 
-func GetLicense(dir string) *string {
+func getLicense(dir string) *string {
 	for _, entry := range licenseFiles {
 		if _, err := os.Stat(filepath.Join(dir, entry)); err == nil {
 			return &entry
@@ -28,7 +28,7 @@ func GetLicense(dir string) *string {
 	return nil
 }
 
-func GetReadme(dir string) *string {
+func getReadme(dir string) *string {
 	for _, entry := range readmeFiles {
 		if _, err := os.Stat(filepath.Join(dir, entry)); err == nil {
 			return &entry
@@ -37,7 +37,7 @@ func GetReadme(dir string) *string {
 	return nil
 }
 
-func CopyFile(srcName string, dstName string) error {
+func copyFile(srcName string, dstName string) error {
 	src, err := os.Open(srcName)
 	if err != nil {
 		return err

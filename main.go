@@ -13,27 +13,27 @@ func main() {
 		log.Fatalln("error: Target not provided")
 	}
 
-	conf, _ := ConfigRead(".yatr.yml")
+	conf, _ := configRead(".yatr.yml")
 
-	target := conf.Targets[targetName]
+	target := conf.targets[targetName]
 
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	runner, ctx, err := GetRunner(targetName, dir, path.Join(dir, "build"))
+	runner, ctx, err := getRunner(targetName, dir, path.Join(dir, "build"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
-	if err := runner.Configure(ctx, configureArgs); err != nil {
+	configureArgs := append(conf.defaultConfigureArgs, target.configureArgs...)
+	if err := runner.configure(ctx, configureArgs); err != nil {
 		log.Fatal(err)
 	}
 
-	taskArgs := append(conf.DefaultTaskArgs, target.TaskArgs...)
-	builtFiles, err := runner.Task(ctx, taskArgs)
+	taskArgs := append(conf.defaultTaskArgs, target.taskArgs...)
+	builtFiles, err := runner.task(ctx, taskArgs)
 	if err != nil {
 		log.Fatal(err)
 	}

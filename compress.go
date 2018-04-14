@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-func CompressGzip(input []byte) ([]byte, error) {
+func compressGzip(input []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	gw := gzip.NewWriter(buf)
 
@@ -28,7 +28,7 @@ func CompressGzip(input []byte) ([]byte, error) {
 	return rv, nil
 }
 
-func CreateTar(chdir string, prefix string, entries []string) ([]byte, error) {
+func createTar(chdir string, prefix string, entries []string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 
@@ -77,7 +77,7 @@ func CreateTar(chdir string, prefix string, entries []string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func CreateZip(chdir string, prefix string, entries []string) ([]byte, error) {
+func createZip(chdir string, prefix string, entries []string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
 
@@ -119,13 +119,13 @@ func CreateZip(chdir string, prefix string, entries []string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func CreateTarGz(chdir string, prefix string, entries []string) ([]byte, error) {
-	t, err := CreateTar(chdir, prefix, entries)
+func createTarGz(chdir string, prefix string, entries []string) ([]byte, error) {
+	t, err := createTar(chdir, prefix, entries)
 	if err != nil {
 		return nil, err
 	}
 
-	x, err := CompressGzip(t)
+	x, err := compressGzip(t)
 	if err != nil {
 		return nil, err
 	}
