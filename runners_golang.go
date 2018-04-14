@@ -183,17 +183,6 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 		}
 
 		builtFiles = []string{fileName}
-
-	} else if goTool == "test" {
-
-		// for test builds we will ship source tarballs
-		archiveName := fmt.Sprintf("%s-%s", buildName, buildVersion)
-		archives, err := gitArchive(archiveName, ctx.srcDir, ctx.buildDir)
-		if err != nil {
-			return nil, err
-		}
-
-		builtFiles = append(builtFiles, archives...)
 	}
 
 	return &buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
