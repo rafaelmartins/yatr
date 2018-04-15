@@ -55,6 +55,11 @@ func main() {
 	log.Println("    Build directory: ", rctx.buildDir)
 	log.Println("")
 
+	log.Println("Step: Git repository unshallow")
+	if err := gitUnshallow(rctx.srcDir); err != nil {
+		log.Fatal(err)
+	}
+
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
 	if err := run.configure(rctx, configureArgs); err != nil {
 		log.Fatal(err)

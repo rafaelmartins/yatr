@@ -67,3 +67,9 @@ func gitArchive(name string, repoDir string, outputDir string) ([]string, error)
 
 	return archives, nil
 }
+
+func gitUnshallow(repoDir string) error {
+	cmd := exec.Command("git", "fetch", "--unshallow")
+	cmd.Dir = repoDir
+	return cmd.Run()
+}
