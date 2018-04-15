@@ -2,3 +2,5 @@ targets:
     distcheck:
         task_args:
             - ./...
+    dist-darwin-amd64:
+        archive_extract_filter: "*.tar.gz"

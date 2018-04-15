@@ -13,15 +13,16 @@ type Config struct {
 }
 
 type Target struct {
-	ConfigureArgs   []string          `yaml:"configure_args"`
-	TaskArgs        []string          `yaml:"task_args"`
-	PublisherParams map[string]string `yaml:"publisher_params"`
+	ConfigureArgs        []string `yaml:"configure_args"`
+	TaskArgs             []string `yaml:"task_args"`
+	ArchiveFilter        string   `yaml:"archive_filter"`
+	ArchiveExtractFilter string   `yaml:"archive_extract_filter"`
 }
 
 func configRead(filename string) (*Config, error) {
 	configContent, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return &Config{}, err
+		return &Config{}, nil
 	}
 
 	var conf Config

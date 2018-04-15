@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path"
@@ -11,12 +10,12 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("[YATR] >>> ")
 
-	banner := "Starting YATR"
+	log.Println("Starting YATR ...")
+
 	conf, err := configRead(".yatr.yml")
-	if err == nil {
-		banner = fmt.Sprintf("%s (Using configuration file: .yatr.yml)", banner)
+	if err != nil {
+		log.Fatal(err)
 	}
-	log.Println(banner, "...")
 
 	targetName, ok := os.LookupEnv("TARGET")
 	if !ok {
@@ -70,6 +69,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if len(target.ArchiveFilter) > 0 {
+		bctx.archives = filterArchives(bctx.archives, target.ArchiveFilter)
+	}
+
 	log.Println("")
 	log.Println("Build details:")
 	log.Println("")
@@ -85,7 +88,7 @@ func main() {
 
 	if pub != nil {
 		if len(bctx.archives) > 0 {
-			if err := pub.publish(rctx, bctx, target.PublisherParams); err != nil {
+			if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
 				log.Fatal(err)
 			}
 		} else {

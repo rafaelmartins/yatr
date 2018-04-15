@@ -21,7 +21,7 @@ func (r *distfilesApiPublisher) name() string {
 	return "distfiles-api"
 }
 
-func (p *distfilesApiPublisher) publish(rctx *runnerCtx, bctx *buildCtx, params map[string]string) error {
+func (p *distfilesApiPublisher) publish(rctx *runnerCtx, bctx *buildCtx, pattern string) error {
 	log.Println("Step: Publish (Publisher: distfiles-api)")
 
 	for _, archive := range bctx.archives {
@@ -47,16 +47,25 @@ func (p *distfilesApiPublisher) publish(rctx *runnerCtx, bctx *buildCtx, params 
 		checksumHex := hex.EncodeToString(checksum[:])
 		checksumStr := fmt.Sprintf("%s  %s", checksumHex, archive)
 
-		extract, found := params["extract"]
-		if !found {
-			extract = "false"
+		extract := false
+		if len(pattern) > 0 {
+			var err error
+			extract, err = filepath.Match(pattern, archive)
+			if err != nil {
+				extract = false
+			}
+		}
+
+		extractStr := "false"
+		if extract {
+			extractStr = "true"
 		}
 
 		reqParams := map[string]string{
 			"project": bctx.projectName,
 			"version": bctx.projectVersion,
 			"sha512":  checksumStr,
-			"extract": extract,
+			"extract": extractStr,
 		}
 
 		for key, value := range reqParams {

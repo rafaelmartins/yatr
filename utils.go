@@ -70,3 +70,13 @@ func Command(dir string, name string, arg ...string) *exec.Cmd {
 	rv.Dir = dir
 	return rv
 }
+
+func filterArchives(archives []string, pattern string) []string {
+	rv := []string{}
+	for _, archive := range archives {
+		if matched, err := filepath.Match(pattern, archive); err == nil && matched {
+			rv = append(rv, archive)
+		}
+	}
+	return rv
+}
