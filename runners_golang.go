@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -49,26 +49,28 @@ var validDistTarget = regexp.MustCompile(`^dist-(([a-z0-9]+)-([a-z0-9]+))$`)
 
 type golangRunner struct{}
 
+func (r *golangRunner) name() string {
+	return "golang"
+}
+
 func (r *golangRunner) configure(ctx *runnerCtx, args []string) error {
 	return nil
 }
 
 func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
+	log.Println("Step: Task (Runner: golang)")
+
 	var goTool string
 	if ctx.targetName == "distcheck" {
 		goTool = "test"
 	} else if strings.HasPrefix(ctx.targetName, "dist-") {
 		goTool = "build"
 	} else {
-		return nil, fmt.Errorf("error: Target not supported for golang: %s", ctx.targetName)
+		return nil, fmt.Errorf("Error: Target not supported for golang: %s", ctx.targetName)
 	}
 
 	goArgs := append([]string{goTool, "-v", "-x"}, args...)
-
-	cmd := exec.Command("go", goArgs...)
-	cmd.Dir = ctx.srcDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd := Command(ctx.srcDir, "go", goArgs...)
 
 	isWindows := false
 	var osArch string
@@ -76,7 +78,7 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 	if goTool == "build" {
 		matches := validDistTarget.FindStringSubmatch(ctx.targetName)
 		if matches == nil {
-			return nil, fmt.Errorf("error: Invalid target name for golang: %s", ctx.targetName)
+			return nil, fmt.Errorf("Error: Invalid target name for golang: %s", ctx.targetName)
 		}
 
 		osArch = matches[1]
@@ -88,7 +90,7 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("error: Unsupported dist target for golang: %s", ctx.targetName)
+			return nil, fmt.Errorf("Error: Unsupported dist target for golang: %s", ctx.targetName)
 		}
 
 		isWindows = matches[2] == "windows"

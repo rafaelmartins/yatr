@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -16,8 +17,16 @@ type distfilesApiPublisher struct {
 	url string
 }
 
+func (r *distfilesApiPublisher) name() string {
+	return "distfiles-api"
+}
+
 func (p *distfilesApiPublisher) publish(rctx *runnerCtx, bctx *buildCtx, params map[string]string) error {
+	log.Println("Step: Publish (Publisher: distfiles-api)")
+
 	for _, archive := range bctx.archives {
+		log.Println("    - Uploading archive:", archive)
+
 		f := filepath.Join(rctx.buildDir, archive)
 
 		body := new(bytes.Buffer)
@@ -77,12 +86,14 @@ func (p *distfilesApiPublisher) publish(rctx *runnerCtx, bctx *buildCtx, params 
 
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf(
-				"error: failed to upload file to distfiles api: %s (%d: %s)",
+				"Error: Failed to upload file to distfiles api: %s (%d: %s)",
 				archive,
 				resp.StatusCode,
 				bodyString,
 			)
 		}
+
+		log.Println("          Done!")
 	}
 	return nil
 }

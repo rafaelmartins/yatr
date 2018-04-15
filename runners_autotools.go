@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -49,12 +49,14 @@ func configLogGetNameVersion(ctx *runnerCtx) (string, string) {
 	return name, version
 }
 
-func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
-	cmd := exec.Command("autoreconf", "--warnings=all", "--install", "--force")
-	cmd.Dir = ctx.srcDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func (r *autotoolsRunner) name() string {
+	return "autotools"
+}
 
+func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
+	log.Println("Step: Configure (Runner: autotools)")
+
+	cmd := Command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
 	if err := cmd.Run(); err != nil {
 		return nil
 	}
@@ -63,21 +65,17 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 
 	st, err := os.Stat(configure)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("error: `configure` script was not created")
+		return fmt.Errorf("Error: `configure` script was not created")
 	}
 	if err != nil {
 		return err
 	}
 
 	if st.Mode()&0111 == 0 {
-		return fmt.Errorf("error: `configure` script is not executable")
+		return fmt.Errorf("Error: `configure` script is not executable")
 	}
 
-	cmd = exec.Command(configure, args...)
-	cmd.Dir = ctx.buildDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
+	cmd = Command(ctx.buildDir, configure, args...)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -86,13 +84,12 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 }
 
 func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
+	log.Println("Step: Task (Runner: autotools)")
+
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
-	cmd := exec.Command("make", makeArgs...)
-	cmd.Dir = ctx.buildDir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
+	cmd := Command(ctx.buildDir, "make", makeArgs...)
 	if err := cmd.Run(); err != nil {
 		return nil, err
 	}

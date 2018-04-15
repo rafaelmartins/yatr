@@ -1,36 +1,33 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
 )
 
 type publisher interface {
+	name() string
 	publish(rctx *runnerCtx, bctx *buildCtx, params map[string]string) error
 }
 
-func getPublisher() (publisher, error) {
+func getPublisher() publisher {
 
 	// environment checks:
 	// - don't run on pull requests
 	// - only run for master and tags
 	if os.Getenv("TRAVIS_PULL_REQUEST") != "false" {
-		log.Println("warning: this seems to be a pull request. not publishing ...")
-		return nil, nil
+		return nil
 	}
 	if os.Getenv("TRAVIS_BRANCH") != "master" && len(os.Getenv("TRAVIS_TAG")) == 0 {
-		log.Println("warning: this seems to not be master branch nor a git tag. not publishing ...")
-		return nil, nil
+		return nil
 	}
 
 	// distfiles api check
 	distfilesApiUrl, found := os.LookupEnv("DISTFILES_URL")
 	if found {
-		return &distfilesApiPublisher{url: distfilesApiUrl}, nil
+		return &distfilesApiPublisher{url: distfilesApiUrl}
 	}
 
-	return nil, fmt.Errorf("error: No publisher found!")
+	return nil
 }
 
 func checkEnvPublisher() error {

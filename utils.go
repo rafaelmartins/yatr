@@ -2,8 +2,11 @@ package main
 
 import (
 	"io"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 var licenseFiles = []string{
@@ -55,4 +58,15 @@ func copyFile(srcName string, dstName string) error {
 	}
 
 	return nil
+}
+
+func Command(dir string, name string, arg ...string) *exec.Cmd {
+	args := append([]string{"    Running command:", name}, arg...)
+	log.Println(strings.Join(args, " "))
+	log.Println("        Directory:  ", dir)
+	rv := exec.Command(name, arg...)
+	rv.Stdout = os.Stdout
+	rv.Stderr = os.Stderr
+	rv.Dir = dir
+	return rv
 }
