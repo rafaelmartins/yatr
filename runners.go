@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -43,7 +42,7 @@ func getRunner(targetName string, srcDir string, buildDir string) (runner, *runn
 	}
 
 	// golang check
-	if paths, err := filepath.Glob(fmt.Sprintf("%s/*.go", ctx.srcDir)); err == nil && len(paths) > 0 {
+	if paths, err := filepath.Glob(filepath.Join(ctx.srcDir, "*.go")); err == nil && len(paths) > 0 {
 		return &golangRunner{}, &ctx
 	}
 

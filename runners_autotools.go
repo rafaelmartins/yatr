@@ -56,7 +56,7 @@ func (r *autotoolsRunner) name() string {
 func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	log.Println("Step: Configure (Runner: autotools)")
 
-	cmd := Command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
+	cmd := command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
 	if err := cmd.Run(); err != nil {
 		return nil
 	}
@@ -75,12 +75,8 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 		return fmt.Errorf("Error: `configure` script is not executable")
 	}
 
-	cmd = Command(ctx.buildDir, configure, args...)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	return nil
+	cmd = command(ctx.buildDir, configure, args...)
+	return cmd.Run()
 }
 
 func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
@@ -89,7 +85,7 @@ func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error)
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
 
-	cmd := Command(ctx.buildDir, "make", makeArgs...)
+	cmd := command(ctx.buildDir, "make", makeArgs...)
 	if err := cmd.Run(); err != nil {
 		return nil, err
 	}

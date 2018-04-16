@@ -6,28 +6,28 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
+type config struct {
 	DefaultConfigureArgs []string          `yaml:"default_configure_args"`
 	DefaultTaskArgs      []string          `yaml:"default_task_args"`
-	Targets              map[string]Target `yaml:"targets"`
+	Targets              map[string]target `yaml:"targets"`
 }
 
-type Target struct {
+type target struct {
 	ConfigureArgs        []string `yaml:"configure_args"`
 	TaskArgs             []string `yaml:"task_args"`
 	ArchiveFilter        string   `yaml:"archive_filter"`
 	ArchiveExtractFilter string   `yaml:"archive_extract_filter"`
 }
 
-func configRead(filename string) (*Config, error) {
+func configRead(filename string) (*config, error) {
 	configContent, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return &Config{}, nil
+		return &config{}, nil
 	}
 
-	var conf Config
+	var conf config
 	if err := yaml.Unmarshal(configContent, &conf); err != nil {
-		return &Config{}, err
+		return &config{}, err
 	}
 	return &conf, nil
 }

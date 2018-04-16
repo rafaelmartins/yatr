@@ -17,7 +17,7 @@ type distfilesApiPublisher struct {
 	url string
 }
 
-func (r *distfilesApiPublisher) name() string {
+func (p *distfilesApiPublisher) name() string {
 	return "distfiles-api"
 }
 

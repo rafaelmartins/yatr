@@ -60,7 +60,7 @@ func copyFile(srcName string, dstName string) error {
 	return nil
 }
 
-func Command(dir string, name string, arg ...string) *exec.Cmd {
+func command(dir string, name string, arg ...string) *exec.Cmd {
 	args := append([]string{"    Running command:", name}, arg...)
 	log.Println(strings.Join(args, " "))
 	log.Println("        Directory:  ", dir)

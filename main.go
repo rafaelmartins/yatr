@@ -19,7 +19,7 @@ func main() {
 
 	targetName, ok := os.LookupEnv("TARGET")
 	if !ok {
-		log.Fatalln("Error: Target not provided, export TARGET environemnt variable.")
+		log.Fatalln("Error: Target not provided, export TARGET environment variable.")
 	}
 
 	if os.Getenv("TRAVIS") != "true" {
@@ -76,12 +76,12 @@ func main() {
 	log.Println("")
 	log.Println("Build details:")
 	log.Println("")
-	log.Println("    Project Name:", bctx.projectName)
+	log.Println("    Project Name:   ", bctx.projectName)
 	log.Println("    Project Version:", bctx.projectVersion)
 	if len(bctx.archives) > 0 {
 		log.Println("    Archives:")
 		for _, archive := range bctx.archives {
-			log.Println("        - ", archive)
+			log.Println("        -", archive)
 		}
 	}
 	log.Println("")

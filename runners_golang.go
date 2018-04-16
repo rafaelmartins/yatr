@@ -70,7 +70,7 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 	}
 
 	goArgs := append([]string{goTool, "-v", "-x"}, args...)
-	cmd := Command(ctx.srcDir, "go", goArgs...)
+	cmd := command(ctx.srcDir, "go", goArgs...)
 
 	isWindows := false
 	var osArch string
