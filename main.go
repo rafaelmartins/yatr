@@ -101,7 +101,7 @@ func main() {
 
 	log.Println("")
 	if taskErr != nil {
-		log.Println("!!! TASK FAILED !!!")
+		log.Fatal("!!! TASK FAILED !!!")
 	} else {
 		log.Println("All done! \\o/")
 	}
