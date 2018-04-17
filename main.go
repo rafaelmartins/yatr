@@ -56,7 +56,6 @@ func main() {
 
 	log.Println("Step: Git repository unshallow")
 	gitUnshallow(rctx.srcDir)
-	log.Println("")
 
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
 	if err := run.configure(rctx, configureArgs); err != nil {
@@ -64,40 +63,46 @@ func main() {
 	}
 
 	taskArgs := append(conf.DefaultTaskArgs, target.TaskArgs...)
-	bctx, err := run.task(rctx, taskArgs)
+	taskErr := run.task(rctx, taskArgs)
+
+	bctx, err := run.collect(rctx, taskArgs)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Warning:", err)
 	}
 
-	if len(target.ArchiveFilter) > 0 {
-		bctx.archives = filterArchives(bctx.archives, target.ArchiveFilter)
-	}
-
-	log.Println("")
-	log.Println("Build details:")
-	log.Println("")
-	log.Println("    Project Name:   ", bctx.projectName)
-	log.Println("    Project Version:", bctx.projectVersion)
-	if len(bctx.archives) > 0 {
-		log.Println("    Archives:")
-		for _, archive := range bctx.archives {
-			log.Println("        -", archive)
+	if bctx != nil {
+		if len(target.ArchiveFilter) > 0 {
+			bctx.archives = filterArchives(bctx.archives, target.ArchiveFilter)
 		}
-	}
-	log.Println("")
 
-	if pub != nil {
 		if len(bctx.archives) > 0 {
-			if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
-				log.Fatal(err)
+			log.Println("")
+			log.Println("Build details:")
+			log.Println("")
+			log.Println("    Project Name:   ", bctx.projectName)
+			log.Println("    Project Version:", bctx.projectVersion)
+			log.Println("    Archives:")
+			for _, archive := range bctx.archives {
+				log.Println("        -", archive)
+			}
+			log.Println("")
+
+			if pub != nil {
+				if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				log.Println("Step: Publish (Disabled, no publisher available for this build)")
 			}
 		} else {
 			log.Println("Step: Publish (Disabled, no archives to upload)")
 		}
-	} else {
-		log.Println("Step: Publish (Disabled, no publisher available for this build)")
 	}
 
 	log.Println("")
-	log.Println("All done! \\o/")
+	if taskErr != nil {
+		log.Println("!!! TASK FAILED !!!")
+	} else {
+		log.Println("All done! \\o/")
+	}
 }

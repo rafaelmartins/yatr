@@ -79,16 +79,18 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	return cmd.Run()
 }
 
-func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
+func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) error {
 	log.Println("Step: Task (Runner: autotools)")
 
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
 
 	cmd := command(ctx.buildDir, "make", makeArgs...)
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	}
+	return cmd.Run()
+}
+
+func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error) {
+	log.Println("Step: Collect (Runner: autotools)")
 
 	buildName, buildVersion := configLogGetNameVersion(ctx)
 

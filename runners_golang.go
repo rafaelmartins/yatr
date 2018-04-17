@@ -47,7 +47,11 @@ var validOSArch = []string{
 
 var validDistTarget = regexp.MustCompile(`^dist-(([a-z0-9]+)-([a-z0-9]+))$`)
 
-type golangRunner struct{}
+type golangRunner struct {
+	goTool    string
+	isWindows bool
+	osArch    string
+}
 
 func (r *golangRunner) name() string {
 	return "golang"
@@ -57,43 +61,41 @@ func (r *golangRunner) configure(ctx *runnerCtx, args []string) error {
 	return nil
 }
 
-func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
+func (r *golangRunner) task(ctx *runnerCtx, args []string) error {
 	log.Println("Step: Task (Runner: golang)")
 
-	var goTool string
 	if ctx.targetName == "distcheck" {
-		goTool = "test"
+		r.goTool = "test"
 	} else if strings.HasPrefix(ctx.targetName, "dist-") {
-		goTool = "build"
+		r.goTool = "build"
 	} else {
-		return nil, fmt.Errorf("Error: Target not supported for golang: %s", ctx.targetName)
+		return fmt.Errorf("Error: Target not supported for golang: %s", ctx.targetName)
 	}
 
-	goArgs := append([]string{goTool, "-v", "-x"}, args...)
+	goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
 	cmd := command(ctx.srcDir, "go", goArgs...)
 
-	isWindows := false
-	var osArch string
+	r.isWindows = false
 
-	if goTool == "build" {
+	if r.goTool == "build" {
 		matches := validDistTarget.FindStringSubmatch(ctx.targetName)
 		if matches == nil {
-			return nil, fmt.Errorf("Error: Invalid target name for golang: %s", ctx.targetName)
+			return fmt.Errorf("Error: Invalid target name for golang: %s", ctx.targetName)
 		}
 
-		osArch = matches[1]
+		r.osArch = matches[1]
 
 		found := false
 		for _, elem := range validOSArch {
-			if osArch == elem {
+			if r.osArch == elem {
 				found = true
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("Error: Unsupported dist target for golang: %s", ctx.targetName)
+			return fmt.Errorf("Error: Unsupported dist target for golang: %s", ctx.targetName)
 		}
 
-		isWindows = matches[2] == "windows"
+		r.isWindows = matches[2] == "windows"
 
 		cmd.Env = append(
 			os.Environ(),
@@ -102,9 +104,11 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 		)
 	}
 
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	}
+	return cmd.Run()
+}
+
+func (r *golangRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error) {
+	log.Println("Step: Collect (Runner: golang)")
 
 	// guess build name
 	var sources []string
@@ -125,10 +129,10 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 
 	var builtFiles []string
 
-	if goTool == "build" {
+	if r.goTool == "build" {
 
 		binaryName := buildName
-		if isWindows {
+		if r.isWindows {
 			binaryName = fmt.Sprintf("%s.exe", buildName)
 		}
 		binaryPath := path.Join(ctx.srcDir, binaryName)
@@ -160,14 +164,14 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) (*buildCtx, error) {
 		}
 
 		fileExtension := "tar.gz"
-		if isWindows {
+		if r.isWindows {
 			fileExtension = "zip"
 		}
-		filePrefix := fmt.Sprintf("%s-%s-%s", buildName, osArch, buildVersion)
+		filePrefix := fmt.Sprintf("%s-%s-%s", buildName, r.osArch, buildVersion)
 		fileName := fmt.Sprintf("%s.%s", filePrefix, fileExtension)
 
 		var data []byte
-		if isWindows {
+		if r.isWindows {
 			var err error
 			if data, err = createZip(ctx.buildDir, filePrefix, toCompress); err != nil {
 				return nil, err
