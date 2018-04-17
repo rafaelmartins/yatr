@@ -12,6 +12,10 @@ func main() {
 
 	log.Println("Starting YATR ...")
 
+	if os.Getenv("TRAVIS") != "true" {
+		log.Fatalln("Error: This tool only supports Travis-CI")
+	}
+
 	conf, err := configRead(".yatr.yml")
 	if err != nil {
 		log.Fatal(err)
@@ -20,10 +24,6 @@ func main() {
 	targetName, ok := os.LookupEnv("TARGET")
 	if !ok {
 		log.Fatalln("Error: Target not provided, export TARGET environment variable.")
-	}
-
-	if os.Getenv("TRAVIS") != "true" {
-		log.Fatalln("Error: This tool only supports Travis-CI")
 	}
 
 	log.Println("")
