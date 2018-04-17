@@ -29,7 +29,3 @@ func getPublisher() publisher {
 
 	return nil
 }
-
-func checkEnvPublisher() error {
-	return nil
-}
