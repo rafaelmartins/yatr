@@ -12,14 +12,6 @@ import (
 	"strings"
 )
 
-var autotoolsDistExts = []string{
-	"tar.gz",
-	"tar.bz2",
-	"tar.xz",
-	"zip",
-	"lzip",
-}
-
 var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"](.*)['"]`)
 
 type autotoolsRunner struct{}
@@ -94,7 +86,7 @@ func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, err
 
 	buildName, buildVersion := configLogGetNameVersion(ctx)
 
-	var candidates []string
+	var builtFiles []string
 	files, err := ioutil.ReadDir(ctx.buildDir)
 	if err != nil {
 		return nil, err
@@ -106,18 +98,7 @@ func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, err
 		if !strings.HasPrefix(fileInfo.Name(), fmt.Sprintf("%s-", buildName)) {
 			continue
 		}
-		candidates = append(candidates, fileInfo.Name())
-	}
-
-	var builtFiles []string
-
-	for _, ext := range autotoolsDistExts {
-		suffix := fmt.Sprintf("%s.%s", buildVersion, ext)
-		for _, candidate := range candidates {
-			if strings.HasSuffix(candidate, suffix) {
-				builtFiles = append(builtFiles, candidate)
-			}
-		}
+		builtFiles = append(builtFiles, fileInfo.Name())
 	}
 
 	return &buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
