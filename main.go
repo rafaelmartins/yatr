@@ -42,11 +42,13 @@ func main() {
 	}
 	log.Println("    Runner:   ", run.name())
 
-	pub := getPublisher()
-	if pub == nil {
-		log.Println("    Publisher: (not available)")
-	} else {
+	pub, pubErr := getPublisher()
+	if pubErr != nil {
+		log.Printf("    Publisher: (%s)", pubErr)
+	} else if pub != nil {
 		log.Println("    Publisher:", pub.name())
+	} else {
+		log.Println("    Publisher: (not available)")
 	}
 
 	log.Println("")
@@ -92,15 +94,17 @@ func main() {
 			}
 			log.Println("")
 
-			if pub != nil {
+			if pubErr != nil {
+				log.Printf("Step: Publish: (%s)", pubErr)
+			} else if pub != nil {
 				if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
 					log.Fatal(err)
 				}
 			} else {
-				log.Println("Step: Publish (Disabled, no publisher available for this build)")
+				log.Println("Step: Publish (not available)")
 			}
 		} else {
-			log.Println("Step: Publish (Disabled, no archives to upload)")
+			log.Println("Step: Publish (disabled, no archives to upload)")
 		}
 	}
 
