@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 var licenseFiles = []string{
@@ -73,6 +74,19 @@ func command(dir string, name string, arg ...string) *exec.Cmd {
 	return rv
 }
 
+func run(cmd *exec.Cmd) error {
+	code := 0
+	err := cmd.Run()
+	if err != nil {
+		if msg, ok := err.(*exec.ExitError); ok {
+			code = msg.Sys().(syscall.WaitStatus).ExitStatus()
+		}
+	}
+	log.Println("          Exit code:", code)
+	log.Println("")
+	return err
+}
+
 func filterArchives(archives []string, pattern string) []string {
 	rv := []string{}
 	for _, archive := range archives {
@@ -93,5 +107,5 @@ func runTargetScript(ctx *runnerCtx, taskScript string, taskArgs []string) error
 		fmt.Sprintf("SRCDIR=%s", ctx.srcDir),
 		fmt.Sprintf("BUILDDIR=%s", ctx.buildDir),
 	)
-	return cmd.Run()
+	return run(cmd)
 }

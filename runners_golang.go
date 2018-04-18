@@ -104,7 +104,7 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) error {
 		)
 	}
 
-	return cmd.Run()
+	return run(cmd)
 }
 
 func (r *golangRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error) {

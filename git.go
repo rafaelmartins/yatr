@@ -71,6 +71,5 @@ func gitArchive(name string, repoDir string, outputDir string) ([]string, error)
 func gitUnshallow(repoDir string) {
 	cmd := command(repoDir, "git", "fetch", "--unshallow")
 
-	// ignore errors
-	_ = cmd.Run()
+	run(cmd)
 }

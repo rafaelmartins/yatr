@@ -49,7 +49,7 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	log.Println("Step: Configure (Runner: autotools)")
 
 	cmd := command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
-	if err := cmd.Run(); err != nil {
+	if err := run(cmd); err != nil {
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	}
 
 	cmd = command(ctx.buildDir, configure, args...)
-	return cmd.Run()
+	return run(cmd)
 }
 
 func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) error {
@@ -78,7 +78,7 @@ func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) error {
 	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
 
 	cmd := command(ctx.buildDir, "make", makeArgs...)
-	return cmd.Run()
+	return run(cmd)
 }
 
 func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error) {
