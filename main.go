@@ -63,7 +63,12 @@ func main() {
 	}
 
 	taskArgs := append(conf.DefaultTaskArgs, target.TaskArgs...)
-	taskErr := run.task(rctx, taskArgs)
+	var taskErr error
+	if len(target.TaskScript) > 0 {
+		taskErr = runTargetScript(rctx, target.TaskScript, taskArgs)
+	} else {
+		taskErr = run.task(rctx, taskArgs)
+	}
 
 	bctx, err := run.collect(rctx, taskArgs)
 	if err != nil {

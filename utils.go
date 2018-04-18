@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -79,4 +81,17 @@ func filterArchives(archives []string, pattern string) []string {
 		}
 	}
 	return rv
+}
+
+func runTargetScript(ctx *runnerCtx, taskScript string, taskArgs []string) error {
+	if !path.IsAbs(taskScript) {
+		taskScript = filepath.Join(ctx.srcDir, taskScript)
+	}
+	cmd := command(ctx.buildDir, taskScript, taskArgs...)
+	cmd.Env = append(
+		os.Environ(),
+		fmt.Sprintf("SRCDIR=%s", ctx.srcDir),
+		fmt.Sprintf("BUILDDIR=%s", ctx.buildDir),
+	)
+	return cmd.Run()
 }

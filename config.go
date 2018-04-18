@@ -15,6 +15,7 @@ type config struct {
 type target struct {
 	ConfigureArgs        []string `yaml:"configure_args"`
 	TaskArgs             []string `yaml:"task_args"`
+	TaskScript           string   `yaml:"task_script"`
 	ArchiveFilter        string   `yaml:"archive_filter"`
 	ArchiveExtractFilter string   `yaml:"archive_extract_filter"`
 }
