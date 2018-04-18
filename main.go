@@ -104,6 +104,7 @@ func main() {
 				log.Println("Step: Publish (not available)")
 			}
 		} else {
+			log.Println("")
 			log.Println("Step: Publish (disabled, no archives to upload)")
 		}
 	}
