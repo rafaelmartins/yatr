@@ -16,7 +16,7 @@ var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"
 
 type autotoolsRunner struct{}
 
-func configLogGetNameVersion(ctx *runnerCtx) (string, string) {
+func configLogGetNameVersion(ctx runnerCtx) (string, string) {
 	name := "UNKNOWN"
 	version := "UNKNOWN"
 
@@ -45,7 +45,7 @@ func (r *autotoolsRunner) name() string {
 	return "autotools"
 }
 
-func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
+func (r *autotoolsRunner) configure(ctx runnerCtx, args []string) error {
 	log.Println("Step: Configure (Runner: autotools)")
 
 	cmd := command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
@@ -71,7 +71,7 @@ func (r *autotoolsRunner) configure(ctx *runnerCtx, args []string) error {
 	return run(cmd)
 }
 
-func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) error {
+func (r *autotoolsRunner) task(ctx runnerCtx, args []string) error {
 	log.Println("Step: Task (Runner: autotools)")
 
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
@@ -81,7 +81,7 @@ func (r *autotoolsRunner) task(ctx *runnerCtx, args []string) error {
 	return run(cmd)
 }
 
-func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error) {
+func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error) {
 	log.Println("Step: Collect (Runner: autotools)")
 
 	buildName, buildVersion := configLogGetNameVersion(ctx)
@@ -89,7 +89,7 @@ func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, err
 	var builtFiles []string
 	files, err := ioutil.ReadDir(ctx.buildDir)
 	if err != nil {
-		return nil, err
+		return buildCtx{}, err
 	}
 	for _, fileInfo := range files {
 		if !fileInfo.Mode().IsRegular() {
@@ -101,5 +101,5 @@ func (r *autotoolsRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, err
 		builtFiles = append(builtFiles, fileInfo.Name())
 	}
 
-	return &buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
+	return buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
 }

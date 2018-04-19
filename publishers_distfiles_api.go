@@ -21,7 +21,7 @@ func (p *distfilesApiPublisher) name() string {
 	return "distfiles-api"
 }
 
-func (p *distfilesApiPublisher) publish(rctx *runnerCtx, bctx *buildCtx, pattern string) error {
+func (p *distfilesApiPublisher) publish(rctx runnerCtx, bctx buildCtx, pattern string) error {
 	log.Println("Step: Publish (Publisher: distfiles-api)")
 
 	for _, archive := range bctx.archives {

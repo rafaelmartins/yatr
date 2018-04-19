@@ -77,36 +77,32 @@ func main() {
 		log.Println("Warning:", err)
 	}
 
-	if bctx != nil {
-		if len(target.ArchiveFilter) > 0 {
-			bctx.archives = filterArchives(bctx.archives, target.ArchiveFilter)
+	if len(target.ArchiveFilter) > 0 {
+		bctx.archives = filterArchives(bctx.archives, target.ArchiveFilter)
+	}
+
+	if len(bctx.archives) > 0 {
+		log.Println("")
+		log.Println("Build details:")
+		log.Println("")
+		log.Println("    Project Name:   ", bctx.projectName)
+		log.Println("    Project Version:", bctx.projectVersion)
+		log.Println("    Archives:")
+		for _, archive := range bctx.archives {
+			log.Println("        -", archive)
 		}
+		log.Println("")
 
-		if len(bctx.archives) > 0 {
-			log.Println("")
-			log.Println("Build details:")
-			log.Println("")
-			log.Println("    Project Name:   ", bctx.projectName)
-			log.Println("    Project Version:", bctx.projectVersion)
-			log.Println("    Archives:")
-			for _, archive := range bctx.archives {
-				log.Println("        -", archive)
-			}
-			log.Println("")
-
-			if pubErr != nil {
-				log.Printf("Step: Publish: (%s)", pubErr)
-			} else if pub != nil {
-				if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				log.Println("Step: Publish (not available)")
-			}
+		if pubErr != nil {
+			log.Printf("Step: Publish: (%s)", pubErr)
 		} else {
-			log.Println("")
-			log.Println("Step: Publish (disabled, no archives to upload)")
+			if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
+				log.Fatal(err)
+			}
 		}
+	} else {
+		log.Println("")
+		log.Println("Step: Publish (disabled, no archives to upload)")
 	}
 
 	log.Println("")

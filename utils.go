@@ -97,7 +97,7 @@ func filterArchives(archives []string, pattern string) []string {
 	return rv
 }
 
-func runTargetScript(ctx *runnerCtx, taskScript string, taskArgs []string) error {
+func runTargetScript(ctx runnerCtx, taskScript string, taskArgs []string) error {
 	if !path.IsAbs(taskScript) {
 		taskScript = filepath.Join(ctx.srcDir, taskScript)
 	}

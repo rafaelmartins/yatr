@@ -57,11 +57,11 @@ func (r *golangRunner) name() string {
 	return "golang"
 }
 
-func (r *golangRunner) configure(ctx *runnerCtx, args []string) error {
+func (r *golangRunner) configure(ctx runnerCtx, args []string) error {
 	return nil
 }
 
-func (r *golangRunner) task(ctx *runnerCtx, args []string) error {
+func (r *golangRunner) task(ctx runnerCtx, args []string) error {
 	log.Println("Step: Task (Runner: golang)")
 
 	if ctx.targetName == "distcheck" {
@@ -107,7 +107,7 @@ func (r *golangRunner) task(ctx *runnerCtx, args []string) error {
 	return run(cmd)
 }
 
-func (r *golangRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error) {
+func (r *golangRunner) collect(ctx runnerCtx, args []string) (buildCtx, error) {
 	log.Println("Step: Collect (Runner: golang)")
 
 	// guess build name
@@ -139,7 +139,7 @@ func (r *golangRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error)
 
 		if st, err := os.Stat(binaryPath); err == nil && st.Mode()&0111 != 0 {
 			if err := os.Rename(binaryPath, path.Join(ctx.buildDir, binaryName)); err != nil {
-				return nil, err
+				return buildCtx{}, err
 			}
 		}
 
@@ -174,22 +174,22 @@ func (r *golangRunner) collect(ctx *runnerCtx, args []string) (*buildCtx, error)
 		if r.isWindows {
 			var err error
 			if data, err = createZip(ctx.buildDir, filePrefix, toCompress); err != nil {
-				return nil, err
+				return buildCtx{}, err
 			}
 		} else {
 			var err error
 			if data, err = createTarGz(ctx.buildDir, filePrefix, toCompress); err != nil {
-				return nil, err
+				return buildCtx{}, err
 			}
 		}
 
 		filePath := filepath.Join(ctx.buildDir, fileName)
 		if err := ioutil.WriteFile(filePath, data, 0666); err != nil {
-			return nil, err
+			return buildCtx{}, err
 		}
 
 		builtFiles = []string{fileName}
 	}
 
-	return &buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
+	return buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
 }
