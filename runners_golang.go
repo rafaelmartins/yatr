@@ -53,6 +53,56 @@ type golangRunner struct {
 	osArch    string
 }
 
+func getFullLicense(ctx runnerCtx) string {
+	// get main license
+	mainLicense := getLicense(ctx.srcDir)
+	if len(mainLicense) == 0 {
+		return ""
+	}
+
+	f, err := os.Create(filepath.Join(ctx.buildDir, mainLicense))
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	content, err := ioutil.ReadFile(filepath.Join(ctx.srcDir, mainLicense))
+	if err != nil {
+		return ""
+	}
+
+	if _, err := f.Write(content); err != nil {
+		return ""
+	}
+
+	vendorDir := filepath.Join(ctx.srcDir, "vendor")
+
+	filepath.Walk(vendorDir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && info.IsDir() {
+			license := getLicense(path)
+			if len(license) > 0 {
+				repo := strings.TrimPrefix(path, vendorDir+string(os.PathSeparator))
+
+				f.WriteString("\n\n\n#### License for ")
+				f.WriteString(repo)
+				f.WriteString(":\n\n")
+
+				content, err := ioutil.ReadFile(filepath.Join(path, license))
+				if err != nil {
+					return err
+				}
+
+				if _, err := f.Write(content); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+
+	return mainLicense
+}
+
 func (r *golangRunner) name() string {
 	return "golang"
 }
@@ -145,22 +195,18 @@ func (r *golangRunner) collect(ctx runnerCtx, args []string) (buildCtx, error) {
 
 		toCompress := []string{binaryName}
 
-		license := getLicense(ctx.srcDir)
-		if license != nil {
-			copyFile(
-				filepath.Join(ctx.srcDir, *license),
-				filepath.Join(ctx.buildDir, *license),
-			)
-			toCompress = append(toCompress, *license)
+		license := getFullLicense(ctx)
+		if len(license) > 0 {
+			toCompress = append(toCompress, license)
 		}
 
 		readme := getReadme(ctx.srcDir)
-		if readme != nil {
+		if len(readme) > 0 {
 			copyFile(
-				filepath.Join(ctx.srcDir, *readme),
-				filepath.Join(ctx.buildDir, *readme),
+				filepath.Join(ctx.srcDir, readme),
+				filepath.Join(ctx.buildDir, readme),
 			)
-			toCompress = append(toCompress, *readme)
+			toCompress = append(toCompress, readme)
 		}
 
 		fileExtension := "tar.gz"
