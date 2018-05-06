@@ -98,6 +98,10 @@ func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error
 		if !strings.HasPrefix(fileInfo.Name(), fmt.Sprintf("%s-", buildName)) {
 			continue
 		}
+		// this avoids collecting binaries by mystake
+		if !strings.Contains(fileInfo.Name(), buildVersion) {
+			continue
+		}
 		builtFiles = append(builtFiles, fileInfo.Name())
 	}
 
