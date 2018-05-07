@@ -12,6 +12,16 @@ import (
 	"strings"
 )
 
+var autotoolsDistExts = []string{
+	"gz",
+	"bz2",
+	"xz",
+	"zip",
+	"lzip",
+	"rpm",
+	"deb",
+}
+
 var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"](.*)['"]`)
 
 type autotoolsRunner struct{}
@@ -86,7 +96,7 @@ func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error
 
 	buildName, buildVersion := configLogGetNameVersion(ctx)
 
-	var builtFiles []string
+	var candidates []string
 	files, err := ioutil.ReadDir(ctx.buildDir)
 	if err != nil {
 		return buildCtx{}, err
@@ -98,15 +108,18 @@ func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error
 		if !strings.HasPrefix(fileInfo.Name(), fmt.Sprintf("%s-", buildName)) {
 			continue
 		}
+		candidates = append(candidates, fileInfo.Name())
+	}
 
-		// this avoids collecting binaries by mystake, but needs improvement
-		if !strings.Contains(fileInfo.Name(), ".") {
-			continue
+	var builtFiles []string
+
+	for _, ext := range autotoolsDistExts {
+		suffix := fmt.Sprintf("%s.%s", buildVersion, ext)
+		for _, candidate := range candidates {
+			if strings.HasSuffix(candidate, suffix) {
+				builtFiles = append(builtFiles, candidate)
+			}
 		}
-		if strings.HasSuffix(fileInfo.Name(), ".exe") {
-			continue
-		}
-		builtFiles = append(builtFiles, fileInfo.Name())
 	}
 
 	return buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
