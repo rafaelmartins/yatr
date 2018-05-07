@@ -114,7 +114,7 @@ func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error
 	var builtFiles []string
 
 	for _, ext := range autotoolsDistExts {
-		suffix := fmt.Sprintf("%s.%s", buildVersion, ext)
+		suffix := fmt.Sprintf(".%s", ext)
 		for _, candidate := range candidates {
 			if strings.HasSuffix(candidate, suffix) {
 				builtFiles = append(builtFiles, candidate)
