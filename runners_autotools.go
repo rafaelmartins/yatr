@@ -26,62 +26,63 @@ var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"
 
 type autotoolsRunner struct{}
 
-func configLogGetNameVersion(ctx runnerCtx) (string, string) {
-	name := "UNKNOWN"
-	version := "UNKNOWN"
+func getAutotoolsProject(ctx runnerCtx) project {
+	projectName := "UNKNOWN"
+	projectVersion := "UNKNOWN"
 
 	content, err := ioutil.ReadFile(filepath.Join(ctx.buildDir, "config.log"))
 	if err != nil {
-		return name, version
+		return project{Name: projectName, Version: projectVersion}
 	}
 
 	matches := configLogNameVersion.FindAllStringSubmatch(string(content), -1)
 	if matches == nil {
-		return name, version
+		return project{Name: projectName, Version: projectVersion}
 	}
 
 	for _, match := range matches {
 		if match[1] == "TARNAME" {
-			name = match[2]
+			projectName = match[2]
 		} else if match[1] == "VERSION" {
-			version = match[2]
+			projectVersion = match[2]
 		}
 	}
 
-	return name, version
+	return project{Name: projectName, Version: projectVersion}
 }
 
 func (r *autotoolsRunner) name() string {
 	return "autotools"
 }
 
-func (r *autotoolsRunner) configure(ctx runnerCtx, args []string) error {
+func (r *autotoolsRunner) configure(ctx runnerCtx, args []string) (project, error) {
 	log.Println("Step: Configure (Runner: autotools)")
 
 	cmd := command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
 	if err := run(cmd); err != nil {
-		return nil
+		return project{}, err
 	}
 
 	configure := path.Join(ctx.srcDir, "configure")
 
 	st, err := os.Stat(configure)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("Error: `configure` script was not created")
+		return project{}, fmt.Errorf("Error: `configure` script was not created")
 	}
 	if err != nil {
-		return err
+		return project{}, err
 	}
 
 	if st.Mode()&0111 == 0 {
-		return fmt.Errorf("Error: `configure` script is not executable")
+		return project{}, fmt.Errorf("Error: `configure` script is not executable")
 	}
 
 	cmd = command(ctx.buildDir, configure, args...)
-	return run(cmd)
+
+	return getAutotoolsProject(ctx), run(cmd)
 }
 
-func (r *autotoolsRunner) task(ctx runnerCtx, args []string) error {
+func (r *autotoolsRunner) task(ctx runnerCtx, proj project, args []string) error {
 	log.Println("Step: Task (Runner: autotools)")
 
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
@@ -91,28 +92,26 @@ func (r *autotoolsRunner) task(ctx runnerCtx, args []string) error {
 	return run(cmd)
 }
 
-func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error) {
+func (r *autotoolsRunner) collect(ctx runnerCtx, proj project, args []string) ([]string, error) {
 	log.Println("Step: Collect (Runner: autotools)")
 
-	buildName, buildVersion := configLogGetNameVersion(ctx)
-
-	var candidates []string
 	files, err := ioutil.ReadDir(ctx.buildDir)
 	if err != nil {
-		return buildCtx{}, err
+		return nil, err
 	}
+
+	var candidates []string
 	for _, fileInfo := range files {
 		if !fileInfo.Mode().IsRegular() {
 			continue
 		}
-		if !strings.HasPrefix(fileInfo.Name(), fmt.Sprintf("%s-", buildName)) {
+		if !strings.HasPrefix(fileInfo.Name(), fmt.Sprintf("%s-", proj.Name)) {
 			continue
 		}
 		candidates = append(candidates, fileInfo.Name())
 	}
 
 	var builtFiles []string
-
 	for _, ext := range autotoolsDistExts {
 		suffix := fmt.Sprintf(".%s", ext)
 		for _, candidate := range candidates {
@@ -122,5 +121,5 @@ func (r *autotoolsRunner) collect(ctx runnerCtx, args []string) (buildCtx, error
 		}
 	}
 
-	return buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
+	return builtFiles, nil
 }

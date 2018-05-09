@@ -12,17 +12,16 @@ type runnerCtx struct {
 	buildDir   string
 }
 
-type buildCtx struct {
-	projectName    string
-	projectVersion string
-	archives       []string
+type project struct {
+	Name    string
+	Version string
 }
 
 type runner interface {
 	name() string
-	configure(ctx runnerCtx, args []string) error
-	task(ctx runnerCtx, args []string) error
-	collect(ctx runnerCtx, args []string) (buildCtx, error)
+	configure(ctx runnerCtx, args []string) (project, error)
+	task(ctx runnerCtx, proj project, args []string) error
+	collect(ctx runnerCtx, proj project, args []string) ([]string, error)
 }
 
 func getRunner(targetName string, srcDir string, buildDir string) (runner, runnerCtx) {

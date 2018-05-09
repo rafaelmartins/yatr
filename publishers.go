@@ -7,7 +7,7 @@ import (
 
 type publisher interface {
 	name() string
-	publish(rctx runnerCtx, bctx buildCtx, pattern string) error
+	publish(rctx runnerCtx, proj project, archives []string, pattern string) error
 }
 
 func getPublisher() (publisher, error) {

@@ -21,10 +21,10 @@ func (p *distfilesApiPublisher) name() string {
 	return "distfiles-api"
 }
 
-func (p *distfilesApiPublisher) publish(rctx runnerCtx, bctx buildCtx, pattern string) error {
+func (p *distfilesApiPublisher) publish(rctx runnerCtx, proj project, archives []string, pattern string) error {
 	log.Println("Step: Publish (Publisher: distfiles-api)")
 
-	for _, archive := range bctx.archives {
+	for _, archive := range archives {
 		log.Println("    - Uploading archive:", archive)
 
 		f := filepath.Join(rctx.buildDir, archive)
@@ -62,8 +62,8 @@ func (p *distfilesApiPublisher) publish(rctx runnerCtx, bctx buildCtx, pattern s
 		}
 
 		reqParams := map[string]string{
-			"project": bctx.projectName,
-			"version": bctx.projectVersion,
+			"project": proj.Name,
+			"version": proj.Version,
 			"sha512":  checksumStr,
 			"extract": extractStr,
 		}

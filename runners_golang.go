@@ -107,11 +107,30 @@ func (r *golangRunner) name() string {
 	return "golang"
 }
 
-func (r *golangRunner) configure(ctx runnerCtx, args []string) error {
-	return nil
+func (r *golangRunner) configure(ctx runnerCtx, args []string) (project, error) {
+	log.Println("Step: Configure (Runner: golang)")
+
+	// guess project name
+	var sources []string
+	for _, arg := range args {
+		if strings.HasSuffix(arg, ".go") {
+			sources = append(sources, arg)
+		}
+	}
+	var projectName string
+	if len(sources) == 0 {
+		projectName = path.Base(ctx.srcDir)
+	} else {
+		projectName = strings.TrimSuffix(sources[0], ".go")
+	}
+
+	// guess project version
+	projectVersion := gitVersion(ctx.srcDir)
+
+	return project{Name: projectName, Version: projectVersion}, nil
 }
 
-func (r *golangRunner) task(ctx runnerCtx, args []string) error {
+func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
 	log.Println("Step: Task (Runner: golang)")
 
 	if ctx.targetName == "distcheck" {
@@ -157,39 +176,22 @@ func (r *golangRunner) task(ctx runnerCtx, args []string) error {
 	return run(cmd)
 }
 
-func (r *golangRunner) collect(ctx runnerCtx, args []string) (buildCtx, error) {
+func (r *golangRunner) collect(ctx runnerCtx, proj project, args []string) ([]string, error) {
 	log.Println("Step: Collect (Runner: golang)")
-
-	// guess build name
-	var sources []string
-	for _, arg := range args {
-		if strings.HasSuffix(arg, ".go") {
-			sources = append(sources, arg)
-		}
-	}
-	var buildName string
-	if len(sources) == 0 {
-		buildName = path.Base(ctx.srcDir)
-	} else {
-		buildName = strings.TrimSuffix(sources[0], ".go")
-	}
-
-	// guess build version
-	buildVersion := gitVersion(ctx.srcDir)
 
 	var builtFiles []string
 
 	if r.goTool == "build" {
 
-		binaryName := buildName
+		binaryName := proj.Name
 		if r.isWindows {
-			binaryName = fmt.Sprintf("%s.exe", buildName)
+			binaryName = fmt.Sprintf("%s.exe", proj.Name)
 		}
 		binaryPath := path.Join(ctx.srcDir, binaryName)
 
 		if st, err := os.Stat(binaryPath); err == nil && st.Mode()&0111 != 0 {
 			if err := os.Rename(binaryPath, path.Join(ctx.buildDir, binaryName)); err != nil {
-				return buildCtx{}, err
+				return nil, err
 			}
 		}
 
@@ -213,29 +215,29 @@ func (r *golangRunner) collect(ctx runnerCtx, args []string) (buildCtx, error) {
 		if r.isWindows {
 			fileExtension = "zip"
 		}
-		filePrefix := fmt.Sprintf("%s-%s-%s", buildName, r.osArch, buildVersion)
+		filePrefix := fmt.Sprintf("%s-%s-%s", proj.Name, r.osArch, proj.Version)
 		fileName := fmt.Sprintf("%s.%s", filePrefix, fileExtension)
 
 		var data []byte
 		if r.isWindows {
 			var err error
 			if data, err = createZip(ctx.buildDir, filePrefix, toCompress); err != nil {
-				return buildCtx{}, err
+				return nil, err
 			}
 		} else {
 			var err error
 			if data, err = createTarGz(ctx.buildDir, filePrefix, toCompress); err != nil {
-				return buildCtx{}, err
+				return nil, err
 			}
 		}
 
 		filePath := filepath.Join(ctx.buildDir, fileName)
 		if err := ioutil.WriteFile(filePath, data, 0666); err != nil {
-			return buildCtx{}, err
+			return nil, err
 		}
 
 		builtFiles = []string{fileName}
 	}
 
-	return buildCtx{projectName: buildName, projectVersion: buildVersion, archives: builtFiles}, nil
+	return builtFiles, nil
 }

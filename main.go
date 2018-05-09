@@ -66,7 +66,8 @@ func main() {
 	}
 
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
-	if err := run.configure(rctx, configureArgs); err != nil {
+	proj, err := run.configure(rctx, configureArgs)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -75,26 +76,26 @@ func main() {
 	if len(target.TaskScript) > 0 {
 		taskErr = runTargetScript(rctx, target.TaskScript, taskArgs)
 	} else {
-		taskErr = run.task(rctx, taskArgs)
+		taskErr = run.task(rctx, proj, taskArgs)
 	}
 
-	bctx, err := run.collect(rctx, taskArgs)
+	archives, err := run.collect(rctx, proj, taskArgs)
 	if err != nil {
 		log.Println("Warning:", err)
 	}
 
 	if len(target.ArchiveFilter) > 0 {
-		bctx.archives = filterArchives(bctx.archives, target.ArchiveFilter)
+		archives = filterArchives(archives, target.ArchiveFilter)
 	}
 
-	if len(bctx.archives) > 0 {
+	if len(archives) > 0 {
 		log.Println("")
 		log.Println("Build details:")
 		log.Println("")
-		log.Println("    Project Name:   ", bctx.projectName)
-		log.Println("    Project Version:", bctx.projectVersion)
+		log.Println("    Project Name:   ", proj.Name)
+		log.Println("    Project Version:", proj.Version)
 		log.Println("    Archives:")
-		for _, archive := range bctx.archives {
+		for _, archive := range archives {
 			log.Println("        -", archive)
 		}
 		log.Println("")
@@ -102,7 +103,7 @@ func main() {
 		if pubErr != nil {
 			log.Printf("Step: Publish: (%s)", pubErr)
 		} else {
-			if err := pub.publish(rctx, bctx, target.ArchiveExtractFilter); err != nil {
+			if err := pub.publish(rctx, proj, archives, target.ArchiveExtractFilter); err != nil {
 				log.Fatal(err)
 			}
 		}
