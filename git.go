@@ -69,9 +69,9 @@ func gitArchive(name string, repoDir string, outputDir string) ([]string, error)
 	return archives, nil
 }
 
-func gitUnshallow(repoDir string) (bool, error) {
+func gitUnshallow(repoDir string) error {
 	if _, err := os.Stat(filepath.Join(repoDir, ".git", "shallow")); err == nil {
-		return true, run(command(repoDir, "git", "fetch", "--unshallow"))
+		return run(command(repoDir, "git", "fetch", "--unshallow"))
 	}
-	return false, nil
+	return nil
 }

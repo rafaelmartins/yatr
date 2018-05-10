@@ -79,7 +79,9 @@ func (r *autotoolsRunner) configure(ctx runnerCtx, args []string) (project, erro
 
 	cmd = command(ctx.buildDir, configure, args...)
 
-	return getAutotoolsProject(ctx), run(cmd)
+	rv := run(cmd)
+
+	return getAutotoolsProject(ctx), rv
 }
 
 func (r *autotoolsRunner) task(ctx runnerCtx, proj project, args []string) error {
@@ -88,8 +90,7 @@ func (r *autotoolsRunner) task(ctx runnerCtx, proj project, args []string) error
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
 
-	cmd := command(ctx.buildDir, "make", makeArgs...)
-	return run(cmd)
+	return run(command(ctx.buildDir, "make", makeArgs...))
 }
 
 func (r *autotoolsRunner) collect(ctx runnerCtx, proj project, args []string) ([]string, error) {

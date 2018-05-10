@@ -84,7 +84,6 @@ func run(cmd *exec.Cmd) error {
 		}
 	}
 	log.Println("          Exit code:", code)
-	log.Println("")
 	return err
 }
 

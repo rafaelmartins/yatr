@@ -57,13 +57,10 @@ func main() {
 	log.Println("")
 
 	log.Println("Step: Git repository unshallow")
-	shallow, err := gitUnshallow(rctx.srcDir)
-	if err != nil {
+	if err := gitUnshallow(rctx.srcDir); err != nil {
 		log.Fatal(err)
 	}
-	if !shallow {
-		log.Println("")
-	}
+	log.Println("")
 
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
 	proj, err := run.configure(rctx, configureArgs)
@@ -79,6 +76,7 @@ func main() {
 	} else {
 		taskErr = run.task(rctx, proj, taskArgs)
 	}
+	log.Println("")
 
 	archives, err := run.collect(rctx, proj, taskArgs)
 	if err != nil {
