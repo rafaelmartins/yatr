@@ -70,6 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("")
 
 	taskArgs := append(conf.DefaultTaskArgs, target.TaskArgs...)
 	var taskErr error
@@ -83,13 +84,13 @@ func main() {
 	if err != nil {
 		log.Println("Warning:", err)
 	}
+	log.Println("")
 
 	if len(target.ArchiveFilter) > 0 {
 		archives = filterArchives(archives, target.ArchiveFilter)
 	}
 
 	if len(archives) > 0 {
-		log.Println("")
 		log.Println("Build details:")
 		log.Println("")
 		log.Println("    Project Name:   ", proj.Name)
@@ -108,7 +109,6 @@ func main() {
 			}
 		}
 	} else {
-		log.Println("")
 		log.Println("Step: Publish (disabled, no archives to upload)")
 	}
 
