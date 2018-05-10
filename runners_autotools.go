@@ -62,6 +62,7 @@ func (r *autotoolsRunner) configure(ctx runnerCtx, args []string) (project, erro
 	if err := run(cmd); err != nil {
 		return project{}, err
 	}
+	log.Println("")
 
 	configure := path.Join(ctx.srcDir, "configure")
 
