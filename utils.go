@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 )
@@ -97,7 +98,7 @@ func filterArchives(archives []string, pattern string) []string {
 	return rv
 }
 
-func runTargetScript(ctx runnerCtx, taskScript string, taskArgs []string) error {
+func runTargetScript(ctx runnerCtx, proj project, taskScript string, taskArgs []string) error {
 	if !path.IsAbs(taskScript) {
 		taskScript = filepath.Join(ctx.srcDir, taskScript)
 	}
@@ -106,6 +107,10 @@ func runTargetScript(ctx runnerCtx, taskScript string, taskArgs []string) error 
 		os.Environ(),
 		fmt.Sprintf("SRCDIR=%s", ctx.srcDir),
 		fmt.Sprintf("BUILDDIR=%s", ctx.buildDir),
+		fmt.Sprintf("PN=%s", proj.Name),
+		fmt.Sprintf("PV=%s", proj.Version),
+		fmt.Sprintf("P=%s-%s", proj.Name, proj.Version),
+		fmt.Sprintf("MAKE_CMD=make -j%d", runtime.NumCPU()+1),
 	)
 	return run(cmd)
 }
