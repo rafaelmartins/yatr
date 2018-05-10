@@ -75,7 +75,7 @@ func main() {
 	taskArgs := append(conf.DefaultTaskArgs, target.TaskArgs...)
 	var taskErr error
 	if len(target.TaskScript) > 0 {
-		taskErr = runTargetScript(rctx, target.TaskScript, taskArgs)
+		taskErr = runTargetScript(rctx, proj, target.TaskScript, taskArgs)
 	} else {
 		taskErr = run.task(rctx, proj, taskArgs)
 	}
