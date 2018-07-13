@@ -23,9 +23,7 @@ func compressGzip(input []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	rv := buf.Bytes()
-
-	return rv, nil
+	return buf.Bytes(), nil
 }
 
 func createTar(chdir string, prefix string, entries []string) ([]byte, error) {

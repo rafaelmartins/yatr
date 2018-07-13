@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,42 +29,6 @@ func gitVersion(repoDir string) string {
 	version = strings.Replace(version, "-g", "-", 1)
 
 	return strings.Trim(version, " \t\n")
-}
-
-func gitArchive(name string, repoDir string, outputDir string) ([]string, error) {
-	var archives []string
-	prefix := fmt.Sprintf("%s/", name)
-	for _, format := range []string{"tar", "zip"} {
-		var out bytes.Buffer
-		cmd := exec.Command("git", "archive", "--format", format, "--prefix", prefix, "HEAD")
-		cmd.Dir = repoDir
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return nil, err
-		}
-
-		archiveContent := out.Bytes()
-
-		ext := format
-		if format == "tar" {
-			var err error
-			archiveContent, err = compressGzip(archiveContent)
-			if err != nil {
-				return nil, err
-			}
-			ext = "tar.gz"
-		}
-
-		archiveName := fmt.Sprintf("%s.%s", name, ext)
-		archivePath := filepath.Join(outputDir, archiveName)
-		if err := ioutil.WriteFile(archivePath, archiveContent, 0666); err != nil {
-			return nil, err
-		}
-
-		archives = append(archives, archiveName)
-	}
-
-	return archives, nil
 }
 
 func gitUnshallow(repoDir string) error {
