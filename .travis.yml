@@ -9,4 +9,4 @@ env:
 
 script:
     - go build -x -v
-    - ./yatr
+    - CGO_ENABLED=0 ./yatr
