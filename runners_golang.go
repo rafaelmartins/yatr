@@ -63,7 +63,11 @@ func getFullLicense(ctx runnerCtx) string {
 	// create vendor directory if not available
 	if _, err := os.Stat(gomodFile); err == nil {
 		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
-			run(command(ctx.srcDir, "go", "mod", "vendor"))
+			cmd := command(ctx.srcDir, "go", "mod", "vendor")
+			cmd.Env = append(
+				os.Environ(),
+				"GO111MODULE=on",
+			)
 		}
 	}
 
