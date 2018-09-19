@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -46,14 +47,26 @@ var validOSArch = []string{
 }
 
 var validDistTarget = regexp.MustCompile(`^dist-(([a-z0-9]+)-([a-z0-9]+))$`)
+var mainPackage = regexp.MustCompile(`^[ \t]*package[ \t]+main[ \t]*$`)
 
 type golangRunner struct {
 	goTool    string
 	isWindows bool
 	osArch    string
+	Binaries  []string
 }
 
 func getFullLicense(ctx runnerCtx) string {
+	gomodFile := filepath.Join(ctx.srcDir, "go.mod")
+	vendorDir := filepath.Join(ctx.srcDir, "vendor")
+
+	// create vendor directory if not available
+	if _, err := os.Stat(gomodFile); err == nil {
+		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
+			run(command(ctx.srcDir, "go", "mod", "vendor"))
+		}
+	}
+
 	// get main license
 	mainLicense := getLicense(ctx.srcDir)
 	if len(mainLicense) == 0 {
@@ -74,8 +87,6 @@ func getFullLicense(ctx runnerCtx) string {
 	if _, err := f.Write(content); err != nil {
 		return ""
 	}
-
-	vendorDir := filepath.Join(ctx.srcDir, "vendor")
 
 	filepath.Walk(vendorDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && info.IsDir() {
@@ -103,6 +114,51 @@ func getFullLicense(ctx runnerCtx) string {
 	return mainLicense
 }
 
+func getMainPackages(ctx runnerCtx) []string {
+	rv := []string{}
+
+	filepath.Walk(ctx.srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && info.Name() == "vendor" {
+			return filepath.SkipDir
+		}
+		if info.Mode().IsRegular() && strings.HasSuffix(path, ".go") {
+			f, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				if mainPackage.MatchString(scanner.Text()) {
+					c := filepath.Dir(path)
+
+					found := false
+					for _, dir := range rv {
+						if dir == c {
+							found = true
+						}
+					}
+					if !found {
+						rv = append(rv, c)
+					}
+				}
+			}
+
+			if err := scanner.Err(); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return rv
+}
+
 func (r *golangRunner) name() string {
 	return "golang"
 }
@@ -111,18 +167,7 @@ func (r *golangRunner) configure(ctx runnerCtx, args []string) (project, error) 
 	log.Println("Step: Configure (Runner: golang)")
 
 	// guess project name
-	var sources []string
-	for _, arg := range args {
-		if strings.HasSuffix(arg, ".go") {
-			sources = append(sources, arg)
-		}
-	}
-	var projectName string
-	if len(sources) == 0 {
-		projectName = path.Base(ctx.srcDir)
-	} else {
-		projectName = strings.TrimSuffix(sources[0], ".go")
-	}
+	projectName := path.Base(ctx.srcDir)
 
 	// guess project version
 	projectVersion := gitVersion(ctx.srcDir)
@@ -140,9 +185,6 @@ func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
 	} else {
 		return fmt.Errorf("Error: Target not supported for golang: %s", ctx.targetName)
 	}
-
-	goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
-	cmd := command(ctx.srcDir, "go", goArgs...)
 
 	r.isWindows = false
 
@@ -166,14 +208,27 @@ func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
 
 		r.isWindows = matches[2] == "windows"
 
-		cmd.Env = append(
-			os.Environ(),
-			fmt.Sprintf("GOOS=%s", matches[2]),
-			fmt.Sprintf("GOARCH=%s", matches[3]),
-		)
+		for _, dir := range getMainPackages(ctx) {
+			goArgs := append([]string{r.goTool, "-v", "-x", dir}, args...)
+			cmd := command(ctx.srcDir, "go", goArgs...)
+			cmd.Env = append(
+				os.Environ(),
+				fmt.Sprintf("GOOS=%s", matches[2]),
+				fmt.Sprintf("GOARCH=%s", matches[3]),
+			)
+			if err := run(cmd); err != nil {
+				return err
+			}
+
+			r.Binaries = append(r.Binaries, path.Base(dir))
+		}
+	} else {
+		goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
+		cmd := command(ctx.srcDir, "go", goArgs...)
+		return run(cmd)
 	}
 
-	return run(cmd)
+	return nil
 }
 
 func (r *golangRunner) collect(ctx runnerCtx, proj project, args []string) ([]string, error) {
@@ -183,19 +238,22 @@ func (r *golangRunner) collect(ctx runnerCtx, proj project, args []string) ([]st
 
 	if r.goTool == "build" {
 
-		binaryName := proj.Name
-		if r.isWindows {
-			binaryName = fmt.Sprintf("%s.exe", proj.Name)
-		}
-		binaryPath := path.Join(ctx.srcDir, binaryName)
+		toCompress := []string{}
 
-		if st, err := os.Stat(binaryPath); err == nil && st.Mode()&0111 != 0 {
-			if err := os.Rename(binaryPath, path.Join(ctx.buildDir, binaryName)); err != nil {
-				return nil, err
+		for _, binaryName := range r.Binaries {
+			if r.isWindows {
+				binaryName = fmt.Sprintf("%s.exe", proj.Name)
 			}
-		}
+			binaryPath := path.Join(ctx.srcDir, binaryName)
 
-		toCompress := []string{binaryName}
+			if st, err := os.Stat(binaryPath); err == nil && st.Mode()&0111 != 0 {
+				if err := os.Rename(binaryPath, path.Join(ctx.buildDir, binaryName)); err != nil {
+					return nil, err
+				}
+			}
+
+			toCompress = append(toCompress, binaryName)
+		}
 
 		license := getFullLicense(ctx)
 		if len(license) > 0 {
