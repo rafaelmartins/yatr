@@ -68,6 +68,7 @@ func getFullLicense(ctx runnerCtx) string {
 				os.Environ(),
 				"GO111MODULE=on",
 			)
+			run(cmd)
 		}
 	}
 
