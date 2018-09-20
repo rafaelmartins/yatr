@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"os"
 	"path"
+	"text/template"
 )
 
 func main() {
@@ -69,16 +71,33 @@ func main() {
 	}
 	log.Println("")
 
+	tmpl := template.New("task-args")
+
 	taskArgs := append(conf.DefaultTaskArgs, target.TaskArgs...)
+	finalTaskArgs := []string{}
+	for _, arg := range taskArgs {
+		t, err := tmpl.Parse(arg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		b := new(bytes.Buffer)
+		if err := t.Execute(b, proj); err != nil {
+			log.Fatal(err)
+		}
+
+		finalTaskArgs = append(finalTaskArgs, b.String())
+	}
+
 	var taskErr error
 	if len(target.TaskScript) > 0 {
-		taskErr = runTargetScript(rctx, proj, target.TaskScript, taskArgs)
+		taskErr = runTargetScript(rctx, proj, target.TaskScript, finalTaskArgs)
 	} else {
-		taskErr = run.task(rctx, proj, taskArgs)
+		taskErr = run.task(rctx, proj, finalTaskArgs)
 	}
 	log.Println("")
 
-	archives, err := run.collect(rctx, proj, taskArgs)
+	archives, err := run.collect(rctx, proj, finalTaskArgs)
 	if err != nil {
 		log.Println("Warning:", err)
 	}

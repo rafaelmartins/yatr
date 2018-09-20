@@ -223,7 +223,8 @@ func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
 		r.isWindows = matches[2] == "windows"
 
 		for _, dir := range getMainPackages(ctx) {
-			goArgs := append([]string{r.goTool, "-v", "-x", dir}, args...)
+			goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
+			goArgs = append(goArgs, dir)
 			cmd := command(ctx.srcDir, "go", goArgs...)
 			cmd.Env = append(
 				os.Environ(),
@@ -237,7 +238,7 @@ func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
 			r.Binaries = append(r.Binaries, path.Base(dir))
 		}
 	} else {
-		goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
+		goArgs := append([]string{r.goTool, "-v"}, args...)
 		cmd := command(ctx.srcDir, "go", goArgs...)
 		return run(cmd)
 	}
