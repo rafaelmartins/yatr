@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -56,6 +57,13 @@ type golangRunner struct {
 	Binaries  []string
 }
 
+func supportModules() bool {
+	cmd := exec.Command("go", "help", "mod")
+	cmd.Stdout = ioutil.Discard
+	cmd.Stderr = ioutil.Discard
+	return cmd.Run() == nil
+}
+
 func getFullLicense(ctx runnerCtx) string {
 	gomodFile := filepath.Join(ctx.srcDir, "go.mod")
 	vendorDir := filepath.Join(ctx.srcDir, "vendor")
@@ -63,12 +71,9 @@ func getFullLicense(ctx runnerCtx) string {
 	// create vendor directory if not available
 	if _, err := os.Stat(gomodFile); err == nil {
 		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
-			cmd := command(ctx.srcDir, "go", "mod", "vendor")
-			cmd.Env = append(
-				os.Environ(),
-				"GO111MODULE=on",
-			)
-			run(cmd)
+			if mod := os.Getenv("GO111MODULE"); mod == "on" {
+				run(command(ctx.srcDir, "go", "mod", "vendor"))
+			}
 		}
 	}
 
@@ -176,6 +181,10 @@ func (r *golangRunner) configure(ctx runnerCtx, args []string) (project, error) 
 
 	// guess project version
 	projectVersion := gitVersion(ctx.srcDir)
+
+	if m := supportModules(); m {
+		os.Setenv("GO111MODULE", "on")
+	}
 
 	return project{Name: projectName, Version: projectVersion}, nil
 }

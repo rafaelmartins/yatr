@@ -7,6 +7,8 @@ env:
     - TARGET=dist-linux-amd64
     - TARGET=dist-darwin-amd64
 
+install: true
+
 script:
-    - go build -x -v
+    - GO111MODULE=on go build -x -v
     - CGO_ENABLED=0 ./yatr
