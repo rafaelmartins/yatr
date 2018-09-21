@@ -225,7 +225,7 @@ func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
 		for _, dir := range getMainPackages(ctx) {
 			goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
 			goArgs = append(goArgs, dir)
-			cmd := command(ctx.srcDir, "go", goArgs...)
+			cmd := command(ctx.buildDir, "go", goArgs...)
 			cmd.Env = append(
 				os.Environ(),
 				fmt.Sprintf("GOOS=%s", matches[2]),
@@ -259,14 +259,6 @@ func (r *golangRunner) collect(ctx runnerCtx, proj project, args []string) ([]st
 			if r.isWindows {
 				binaryName = fmt.Sprintf("%s.exe", proj.Name)
 			}
-			binaryPath := path.Join(ctx.srcDir, binaryName)
-
-			if st, err := os.Stat(binaryPath); err == nil && st.Mode()&0111 != 0 {
-				if err := os.Rename(binaryPath, path.Join(ctx.buildDir, binaryName)); err != nil {
-					return nil, err
-				}
-			}
-
 			toCompress = append(toCompress, binaryName)
 		}
 
