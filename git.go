@@ -33,7 +33,11 @@ func gitVersion(repoDir string) string {
 
 func gitUnshallow(repoDir string) error {
 	if _, err := os.Stat(filepath.Join(repoDir, ".git", "shallow")); err == nil {
-		return run(command(repoDir, "git", "fetch", "--unshallow"))
+		rv := run(command(repoDir, "git", "fetch", "--unshallow"))
+		if rv != nil {
+			return rv
+		}
+		return run(command(repoDir, "git", "fetch", "--tags"))
 	}
 	return nil
 }
