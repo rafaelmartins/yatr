@@ -13,8 +13,10 @@ node {
     }
 
     if (branchName.equals('master')) {
-        stage('Push container') {
-            image.push()
+        docker.withRegistry('https://index.docker.io/v1/', '96cf450e-6289-401e-85cc-f515ac0139ea') {
+            stage('Push container') {
+                image.push()
+            }
         }
     }
 
