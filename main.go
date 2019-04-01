@@ -14,10 +14,6 @@ func main() {
 
 	log.Println("Starting YATR ...")
 
-	if os.Getenv("TRAVIS") != "true" {
-		log.Fatalln("Error: This tool only supports Travis-CI")
-	}
-
 	conf, err := configRead(".yatr.yml")
 	if err != nil {
 		log.Fatal(err)

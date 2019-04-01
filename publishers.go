@@ -20,11 +20,15 @@ func getPublisher() (publisher, error) {
 	// environment checks:
 	// - don't run on pull requests
 	// - only run for master and tags
-	if os.Getenv("TRAVIS_PULL_REQUEST") != "false" {
-		return nil, fmt.Errorf("disabled, pull request")
-	}
-	if os.Getenv("TRAVIS_BRANCH") != "master" && len(os.Getenv("TRAVIS_TAG")) == 0 {
-		return nil, fmt.Errorf("disabled, not master branch nor a git tag")
+
+	// travis
+	if os.Getenv("TRAVIS") == "true" {
+		if os.Getenv("TRAVIS_PULL_REQUEST") != "false" {
+			return nil, fmt.Errorf("disabled, pull request")
+		}
+		if os.Getenv("TRAVIS_BRANCH") != "master" && len(os.Getenv("TRAVIS_TAG")) == 0 {
+			return nil, fmt.Errorf("disabled, not master branch nor a git tag")
+		}
 	}
 
 	// distfiles api check
