@@ -10,5 +10,5 @@ env:
 install: true
 
 script:
-    - GO111MODULE=on go build -x -v
+    - GO111MODULE=on go build -x -v ./cmd/yatr
     - CGO_ENABLED=0 ./yatr
