@@ -8,7 +8,7 @@ RUN set -x \
         git \
     && ( \
         cd /code \
-        && go build -o /usr/bin/yatr \
+        && go build -o /usr/bin/yatr ./cmd/yatr \
     ) \
     && rm -rf /code \
     && apk del .build-deps

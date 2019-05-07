@@ -1,4 +1,4 @@
-package main
+package publishers
 
 import (
 	"bytes"
@@ -9,25 +9,37 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/rafaelmartins/yatr/pkg/runners"
 )
 
 type distfilesApiPublisher struct {
-	url string
+	Url string
 }
 
-func (p *distfilesApiPublisher) name() string {
+func (p *distfilesApiPublisher) Name() string {
 	return "distfiles-api"
 }
 
-func (p *distfilesApiPublisher) publish(rctx runnerCtx, proj project, archives []string, pattern string) error {
+func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) Publisher {
+	distfilesApiUrl, found := os.LookupEnv("DISTFILES_URL")
+	if found {
+		return &distfilesApiPublisher{Url: distfilesApiUrl}
+	}
+
+	return nil
+}
+
+func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {
 	log.Println("Step: Publish (Publisher: distfiles-api)")
 
 	for _, archive := range archives {
 		log.Println("    - Uploading archive:", archive)
 
-		f := filepath.Join(rctx.buildDir, archive)
+		f := filepath.Join(ctx.BuildDir, archive)
 
 		body := new(bytes.Buffer)
 		writer := multipart.NewWriter(body)
@@ -80,7 +92,7 @@ func (p *distfilesApiPublisher) publish(rctx runnerCtx, proj project, archives [
 			return err
 		}
 
-		resp, err := http.Post(p.url, contentType, body)
+		resp, err := http.Post(p.Url, contentType, body)
 		if err != nil {
 			return err
 		}

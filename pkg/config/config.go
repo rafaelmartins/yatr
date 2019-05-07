@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"io/ioutil"
@@ -6,13 +6,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type config struct {
+type Config struct {
 	DefaultConfigureArgs []string          `yaml:"default_configure_args"`
 	DefaultTaskArgs      []string          `yaml:"default_task_args"`
-	Targets              map[string]target `yaml:"targets"`
+	Targets              map[string]Target `yaml:"targets"`
 }
 
-type target struct {
+type Target struct {
 	ConfigureArgs        []string `yaml:"configure_args"`
 	TaskArgs             []string `yaml:"task_args"`
 	TaskScript           string   `yaml:"task_script"`
@@ -20,15 +20,16 @@ type target struct {
 	ArchiveExtractFilter string   `yaml:"archive_extract_filter"`
 }
 
-func configRead(filename string) (*config, error) {
+func Read(filename string) (*Config, error) {
 	configContent, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return &config{}, nil
+		return nil, nil
 	}
 
-	var conf config
+	var conf Config
 	if err := yaml.Unmarshal(configContent, &conf); err != nil {
-		return &config{}, err
+		return nil, err
 	}
+
 	return &conf, nil
 }

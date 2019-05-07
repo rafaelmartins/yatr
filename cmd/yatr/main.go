@@ -6,6 +6,12 @@ import (
 	"os"
 	"path"
 	"text/template"
+
+	"github.com/rafaelmartins/yatr/pkg/config"
+	"github.com/rafaelmartins/yatr/pkg/fs"
+	"github.com/rafaelmartins/yatr/pkg/git"
+	"github.com/rafaelmartins/yatr/pkg/publishers"
+	"github.com/rafaelmartins/yatr/pkg/runners"
 )
 
 func main() {
@@ -13,8 +19,9 @@ func main() {
 	log.SetPrefix("[YATR] >>> ")
 
 	log.Println("Starting YATR ...")
+	log.Println("")
 
-	conf, err := configRead(".yatr.yml")
+	conf, err := config.Read(".yatr.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,7 +31,6 @@ func main() {
 		log.Fatalln("Error: Target not provided, export TARGET environment variable.")
 	}
 
-	log.Println("")
 	log.Println("    Target:   ", targetName)
 
 	target := conf.Targets[targetName]
@@ -34,34 +40,34 @@ func main() {
 		log.Fatal(err)
 	}
 
-	run, rctx := getRunner(targetName, dir, path.Join(dir, "build"))
-	if run == nil {
+	run, ctx := runners.Get(targetName, dir, path.Join(dir, "build"))
+	if run == nil || ctx == nil {
 		log.Fatal("Error: No runner found for this project!")
 	}
-	log.Println("    Runner:   ", run.name())
+	log.Println("    Runner:   ", run.Name())
 
-	pub, pubErr := getPublisher()
+	pub, pubErr := publishers.Get(ctx)
 	if pubErr != nil {
 		log.Printf("    Publisher: (%s)", pubErr)
 	} else if pub != nil {
-		log.Println("    Publisher:", pub.name())
+		log.Println("    Publisher:", pub.Name())
 	} else {
 		log.Println("    Publisher: (not available)")
 	}
 
 	log.Println("")
-	log.Println("    Source directory:", rctx.srcDir)
-	log.Println("    Build directory: ", rctx.buildDir)
+	log.Println("    Source directory:", ctx.SrcDir)
+	log.Println("    Build directory: ", ctx.BuildDir)
 	log.Println("")
 
 	log.Println("Step: Git repository unshallow")
-	if err := gitUnshallow(rctx.srcDir); err != nil {
+	if err := git.Unshallow(ctx.SrcDir); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("")
 
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
-	proj, err := run.configure(rctx, configureArgs)
+	proj, err := run.Configure(ctx, configureArgs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,20 +93,20 @@ func main() {
 
 	var taskErr error
 	if len(target.TaskScript) > 0 {
-		taskErr = runTargetScript(rctx, proj, target.TaskScript, finalTaskArgs)
+		taskErr = runners.RunTargetScript(ctx, proj, target.TaskScript, finalTaskArgs)
 	} else {
-		taskErr = run.task(rctx, proj, finalTaskArgs)
+		taskErr = run.Task(ctx, proj, finalTaskArgs)
 	}
 	log.Println("")
 
-	archives, err := run.collect(rctx, proj, finalTaskArgs)
+	archives, err := run.Collect(ctx, proj, finalTaskArgs)
 	if err != nil {
 		log.Println("Warning:", err)
 	}
 	log.Println("")
 
 	if len(target.ArchiveFilter) > 0 {
-		archives = filterArchives(archives, target.ArchiveFilter)
+		archives = fs.FilterArchives(archives, target.ArchiveFilter)
 	}
 
 	if len(archives) > 0 {
@@ -117,7 +123,7 @@ func main() {
 		if pubErr != nil {
 			log.Printf("Step: Publish: (%s)", pubErr)
 		} else {
-			if err := pub.publish(rctx, proj, archives, target.ArchiveExtractFilter); err != nil {
+			if err := pub.Publish(ctx, proj, archives, target.ArchiveExtractFilter); err != nil {
 				log.Fatal(err)
 			}
 		}

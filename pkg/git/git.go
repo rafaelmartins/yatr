@@ -1,16 +1,18 @@
-package main
+package git
 
 import (
 	"bytes"
 	"os"
-	"os/exec"
+	goExec "os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/rafaelmartins/yatr/pkg/exec"
 )
 
-func gitVersion(repoDir string) string {
+func Version(repoDir string) string {
 	var out bytes.Buffer
-	cmd := exec.Command("git", "describe", "--abbrev=4", "HEAD")
+	cmd := goExec.Command("git", "describe", "--abbrev=4", "HEAD")
 	cmd.Dir = repoDir
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
@@ -31,13 +33,13 @@ func gitVersion(repoDir string) string {
 	return strings.Trim(version, " \t\n")
 }
 
-func gitUnshallow(repoDir string) error {
+func Unshallow(repoDir string) error {
 	if _, err := os.Stat(filepath.Join(repoDir, ".git", "shallow")); err == nil {
-		rv := run(command(repoDir, "git", "fetch", "--unshallow"))
+		rv := exec.Run(exec.Cmd(repoDir, "git", "fetch", "--unshallow"))
 		if rv != nil {
 			return rv
 		}
-		return run(command(repoDir, "git", "fetch", "--tags"))
+		return exec.Run(exec.Cmd(repoDir, "git", "fetch", "--tags"))
 	}
 	return nil
 }

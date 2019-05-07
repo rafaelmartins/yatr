@@ -1,4 +1,4 @@
-package main
+package runners
 
 import (
 	"bufio"
@@ -6,11 +6,16 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
+	goExec "os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/rafaelmartins/yatr/pkg/compress"
+	"github.com/rafaelmartins/yatr/pkg/exec"
+	"github.com/rafaelmartins/yatr/pkg/fs"
+	"github.com/rafaelmartins/yatr/pkg/git"
 )
 
 var validOSArch = []string{
@@ -51,45 +56,45 @@ var validDistTarget = regexp.MustCompile(`^dist-(([a-z0-9]+)-([a-z0-9]+))$`)
 var mainPackage = regexp.MustCompile(`^[ \t]*package[ \t]+main[ \t]*$`)
 
 type golangRunner struct {
-	goTool    string
-	isWindows bool
-	osArch    string
+	GoTool    string
+	IsWindows bool
+	OsArch    string
 	Binaries  []string
 }
 
 func supportModules() bool {
-	cmd := exec.Command("go", "help", "mod")
+	cmd := goExec.Command("go", "help", "mod")
 	cmd.Stdout = ioutil.Discard
 	cmd.Stderr = ioutil.Discard
 	return cmd.Run() == nil
 }
 
-func getFullLicense(ctx runnerCtx) string {
-	gomodFile := filepath.Join(ctx.srcDir, "go.mod")
-	vendorDir := filepath.Join(ctx.srcDir, "vendor")
+func getFullLicense(ctx *Ctx) string {
+	gomodFile := filepath.Join(ctx.SrcDir, "go.mod")
+	vendorDir := filepath.Join(ctx.SrcDir, "vendor")
 
 	// create vendor directory if not available
 	if _, err := os.Stat(gomodFile); err == nil {
 		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
 			if mod := os.Getenv("GO111MODULE"); mod == "on" {
-				run(command(ctx.srcDir, "go", "mod", "vendor"))
+				exec.Run(exec.Cmd(ctx.SrcDir, "go", "mod", "vendor"))
 			}
 		}
 	}
 
 	// get main license
-	mainLicense := getLicense(ctx.srcDir)
+	mainLicense := fs.FindLicense(ctx.SrcDir)
 	if len(mainLicense) == 0 {
 		return ""
 	}
 
-	f, err := os.Create(filepath.Join(ctx.buildDir, mainLicense))
+	f, err := os.Create(filepath.Join(ctx.BuildDir, mainLicense))
 	if err != nil {
 		return ""
 	}
 	defer f.Close()
 
-	content, err := ioutil.ReadFile(filepath.Join(ctx.srcDir, mainLicense))
+	content, err := ioutil.ReadFile(filepath.Join(ctx.SrcDir, mainLicense))
 	if err != nil {
 		return ""
 	}
@@ -100,7 +105,7 @@ func getFullLicense(ctx runnerCtx) string {
 
 	filepath.Walk(vendorDir, func(path string, info os.FileInfo, err error) error {
 		if err == nil && info.IsDir() {
-			license := getLicense(path)
+			license := fs.FindLicense(path)
 			if len(license) > 0 {
 				repo := strings.TrimPrefix(path, vendorDir+string(os.PathSeparator))
 
@@ -124,10 +129,10 @@ func getFullLicense(ctx runnerCtx) string {
 	return mainLicense
 }
 
-func getMainPackages(ctx runnerCtx) []string {
+func getMainPackages(ctx *Ctx) []string {
 	rv := []string{}
 
-	filepath.Walk(ctx.srcDir, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(ctx.SrcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -169,94 +174,124 @@ func getMainPackages(ctx runnerCtx) []string {
 	return rv
 }
 
-func (r *golangRunner) name() string {
+func (r *golangRunner) Name() string {
 	return "golang"
 }
 
-func (r *golangRunner) configure(ctx runnerCtx, args []string) (project, error) {
+func (r *golangRunner) Detect(ctx *Ctx) Runner {
+	found := false
+
+	filepath.Walk(ctx.SrcDir, func(path string, info os.FileInfo, err error) error {
+		if found {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(info.Name()) == ".go" {
+			found = true
+		}
+
+		return nil
+	})
+
+	if found {
+		return &golangRunner{}
+	}
+
+	return nil
+}
+
+func (r *golangRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 	log.Println("Step: Configure (Runner: golang)")
 
 	// guess project name
-	projectName := path.Base(ctx.srcDir)
+	projectName := path.Base(ctx.SrcDir)
 
 	// guess project version
-	projectVersion := gitVersion(ctx.srcDir)
+	projectVersion := git.Version(ctx.SrcDir)
 
 	if m := supportModules(); m {
 		os.Setenv("GO111MODULE", "on")
 	}
 
-	return project{Name: projectName, Version: projectVersion}, nil
+	return &Project{Name: projectName, Version: projectVersion}, nil
 }
 
-func (r *golangRunner) task(ctx runnerCtx, proj project, args []string) error {
+func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	log.Println("Step: Task (Runner: golang)")
 
-	if ctx.targetName == "distcheck" {
-		r.goTool = "test"
-	} else if strings.HasPrefix(ctx.targetName, "dist-") {
-		r.goTool = "build"
+	if ctx.TargetName == "distcheck" {
+		r.GoTool = "test"
+	} else if strings.HasPrefix(ctx.TargetName, "dist-") {
+		r.GoTool = "build"
 	} else {
-		return fmt.Errorf("Error: Target not supported for golang: %s", ctx.targetName)
+		return fmt.Errorf("Error: Target not supported for golang: %s", ctx.TargetName)
 	}
 
-	r.isWindows = false
+	r.IsWindows = false
 
-	if r.goTool == "build" {
-		matches := validDistTarget.FindStringSubmatch(ctx.targetName)
+	if r.GoTool == "build" {
+		matches := validDistTarget.FindStringSubmatch(ctx.TargetName)
 		if matches == nil {
-			return fmt.Errorf("Error: Invalid target name for golang: %s", ctx.targetName)
+			return fmt.Errorf("Error: Invalid target name for golang: %s", ctx.TargetName)
 		}
 
-		r.osArch = matches[1]
+		r.OsArch = matches[1]
 
 		found := false
 		for _, elem := range validOSArch {
-			if r.osArch == elem {
+			if r.OsArch == elem {
 				found = true
 			}
 		}
 		if !found {
-			return fmt.Errorf("Error: Unsupported dist target for golang: %s", ctx.targetName)
+			return fmt.Errorf("Error: Unsupported dist target for golang: %s", ctx.TargetName)
 		}
 
-		r.isWindows = matches[2] == "windows"
+		r.IsWindows = matches[2] == "windows"
 
 		for _, dir := range getMainPackages(ctx) {
-			goArgs := append([]string{r.goTool, "-v", "-x"}, args...)
+			goArgs := append([]string{r.GoTool, "-v", "-x"}, args...)
 			goArgs = append(goArgs, dir)
-			cmd := command(ctx.buildDir, "go", goArgs...)
+			cmd := exec.Cmd(ctx.BuildDir, "go", goArgs...)
 			cmd.Env = append(
 				os.Environ(),
 				fmt.Sprintf("GOOS=%s", matches[2]),
 				fmt.Sprintf("GOARCH=%s", matches[3]),
 			)
-			if err := run(cmd); err != nil {
+			if err := exec.Run(cmd); err != nil {
 				return err
 			}
 
 			r.Binaries = append(r.Binaries, path.Base(dir))
 		}
 	} else {
-		goArgs := append([]string{r.goTool, "-v"}, args...)
-		cmd := command(ctx.srcDir, "go", goArgs...)
-		return run(cmd)
+		goArgs := append([]string{r.GoTool, "-v"}, args...)
+		cmd := exec.Cmd(ctx.SrcDir, "go", goArgs...)
+		return exec.Run(cmd)
 	}
 
 	return nil
 }
 
-func (r *golangRunner) collect(ctx runnerCtx, proj project, args []string) ([]string, error) {
+func (r *golangRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
 	log.Println("Step: Collect (Runner: golang)")
 
 	var builtFiles []string
 
-	if r.goTool == "build" {
+	if r.GoTool == "build" {
 
 		toCompress := []string{}
 
 		for _, binaryName := range r.Binaries {
-			if r.isWindows {
+			if r.IsWindows {
 				binaryName = fmt.Sprintf("%s.exe", proj.Name)
 			}
 			toCompress = append(toCompress, binaryName)
@@ -267,36 +302,36 @@ func (r *golangRunner) collect(ctx runnerCtx, proj project, args []string) ([]st
 			toCompress = append(toCompress, license)
 		}
 
-		readme := getReadme(ctx.srcDir)
+		readme := fs.FindReadme(ctx.SrcDir)
 		if len(readme) > 0 {
-			copyFile(
-				filepath.Join(ctx.srcDir, readme),
-				filepath.Join(ctx.buildDir, readme),
+			fs.CopyFile(
+				filepath.Join(ctx.SrcDir, readme),
+				filepath.Join(ctx.BuildDir, readme),
 			)
 			toCompress = append(toCompress, readme)
 		}
 
 		fileExtension := "tar.gz"
-		if r.isWindows {
+		if r.IsWindows {
 			fileExtension = "zip"
 		}
-		filePrefix := fmt.Sprintf("%s-%s-%s", proj.Name, r.osArch, proj.Version)
+		filePrefix := fmt.Sprintf("%s-%s-%s", proj.Name, r.OsArch, proj.Version)
 		fileName := fmt.Sprintf("%s.%s", filePrefix, fileExtension)
 
 		var data []byte
-		if r.isWindows {
+		if r.IsWindows {
 			var err error
-			if data, err = createZip(ctx.buildDir, filePrefix, toCompress); err != nil {
+			if data, err = compress.Zip(ctx.BuildDir, filePrefix, toCompress); err != nil {
 				return nil, err
 			}
 		} else {
 			var err error
-			if data, err = createTarGz(ctx.buildDir, filePrefix, toCompress); err != nil {
+			if data, err = compress.TarGzip(ctx.BuildDir, filePrefix, toCompress); err != nil {
 				return nil, err
 			}
 		}
 
-		filePath := filepath.Join(ctx.buildDir, fileName)
+		filePath := filepath.Join(ctx.BuildDir, fileName)
 		if err := ioutil.WriteFile(filePath, data, 0666); err != nil {
 			return nil, err
 		}

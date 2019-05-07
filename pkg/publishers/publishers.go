@@ -1,16 +1,23 @@
-package main
+package publishers
 
 import (
 	"fmt"
 	"os"
+
+	"github.com/rafaelmartins/yatr/pkg/runners"
 )
 
-type publisher interface {
-	name() string
-	publish(rctx runnerCtx, proj project, archives []string, pattern string) error
+type Publisher interface {
+	Name() string
+	Detect(ctx *runners.Ctx) Publisher
+	Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error
 }
 
-func getPublisher() (publisher, error) {
+var publishers = []Publisher{
+	&distfilesApiPublisher{},
+}
+
+func Get(ctx *runners.Ctx) (Publisher, error) {
 
 	// publisher disabled by the user
 	if _, found := os.LookupEnv("DISABLE_PUBLISHER"); found {
@@ -31,10 +38,10 @@ func getPublisher() (publisher, error) {
 		}
 	}
 
-	// distfiles api check
-	distfilesApiUrl, found := os.LookupEnv("DISTFILES_URL")
-	if found {
-		return &distfilesApiPublisher{url: distfilesApiUrl}, nil
+	for _, v := range publishers {
+		if r := v.Detect(ctx); r != nil {
+			return r, nil
+		}
 	}
 
 	return nil, fmt.Errorf("disabled, no publisher available")

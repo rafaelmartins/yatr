@@ -1,4 +1,4 @@
-package main
+package runners
 
 import (
 	"fmt"
@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/rafaelmartins/yatr/pkg/exec"
 )
 
 var autotoolsDistExts = []string{
@@ -26,18 +28,18 @@ var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"
 
 type autotoolsRunner struct{}
 
-func getAutotoolsProject(ctx runnerCtx) project {
+func getAutotoolsProject(ctx *Ctx) *Project {
 	projectName := "UNKNOWN"
 	projectVersion := "UNKNOWN"
 
-	content, err := ioutil.ReadFile(filepath.Join(ctx.buildDir, "config.log"))
+	content, err := ioutil.ReadFile(filepath.Join(ctx.BuildDir, "config.log"))
 	if err != nil {
-		return project{Name: projectName, Version: projectVersion}
+		return &Project{Name: projectName, Version: projectVersion}
 	}
 
 	matches := configLogNameVersion.FindAllStringSubmatch(string(content), -1)
 	if matches == nil {
-		return project{Name: projectName, Version: projectVersion}
+		return &Project{Name: projectName, Version: projectVersion}
 	}
 
 	for _, match := range matches {
@@ -48,56 +50,65 @@ func getAutotoolsProject(ctx runnerCtx) project {
 		}
 	}
 
-	return project{Name: projectName, Version: projectVersion}
+	return &Project{Name: projectName, Version: projectVersion}
 }
 
-func (r *autotoolsRunner) name() string {
+func (r *autotoolsRunner) Name() string {
 	return "autotools"
 }
 
-func (r *autotoolsRunner) configure(ctx runnerCtx, args []string) (project, error) {
+func (r *autotoolsRunner) Detect(ctx *Ctx) Runner {
+	path := path.Join(ctx.SrcDir, "configure.ac")
+	if _, err := os.Stat(path); err == nil {
+		return &autotoolsRunner{}
+	}
+
+	return nil
+}
+
+func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 	log.Println("Step: Configure (Runner: autotools)")
 
-	cmd := command(ctx.srcDir, "autoreconf", "--warnings=all", "--install", "--force")
-	if err := run(cmd); err != nil {
-		return project{}, err
+	cmd := exec.Cmd(ctx.SrcDir, "autoreconf", "--warnings=all", "--install", "--force")
+	if err := exec.Run(cmd); err != nil {
+		return nil, err
 	}
 	log.Println("")
 
-	configure := path.Join(ctx.srcDir, "configure")
+	configure := path.Join(ctx.SrcDir, "configure")
 
 	st, err := os.Stat(configure)
 	if os.IsNotExist(err) {
-		return project{}, fmt.Errorf("Error: `configure` script was not created")
+		return nil, fmt.Errorf("Error: `configure` script was not created")
 	}
 	if err != nil {
-		return project{}, err
+		return nil, err
 	}
 
 	if st.Mode()&0111 == 0 {
-		return project{}, fmt.Errorf("Error: `configure` script is not executable")
+		return nil, fmt.Errorf("Error: `configure` script is not executable")
 	}
 
-	cmd = command(ctx.buildDir, configure, args...)
+	cmd = exec.Cmd(ctx.BuildDir, configure, args...)
 
-	rv := run(cmd)
+	rv := exec.Run(cmd)
 
 	return getAutotoolsProject(ctx), rv
 }
 
-func (r *autotoolsRunner) task(ctx runnerCtx, proj project, args []string) error {
+func (r *autotoolsRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	log.Println("Step: Task (Runner: autotools)")
 
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
-	makeArgs := append(append([]string{jobs}, args...), ctx.targetName)
+	makeArgs := append(append([]string{jobs}, args...), ctx.TargetName)
 
-	return run(command(ctx.buildDir, "make", makeArgs...))
+	return exec.Run(exec.Cmd(ctx.BuildDir, "make", makeArgs...))
 }
 
-func (r *autotoolsRunner) collect(ctx runnerCtx, proj project, args []string) ([]string, error) {
+func (r *autotoolsRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
 	log.Println("Step: Collect (Runner: autotools)")
 
-	files, err := ioutil.ReadDir(ctx.buildDir)
+	files, err := ioutil.ReadDir(ctx.BuildDir)
 	if err != nil {
 		return nil, err
 	}
