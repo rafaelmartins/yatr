@@ -21,12 +21,13 @@ type Target struct {
 }
 
 func Read(filename string) (*Config, error) {
+	var conf Config
+
 	configContent, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, nil
+		return &conf, nil
 	}
 
-	var conf Config
 	if err := yaml.Unmarshal(configContent, &conf); err != nil {
 		return nil, err
 	}

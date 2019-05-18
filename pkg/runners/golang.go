@@ -22,15 +22,21 @@ var validOSArch = []string{
 	"android-arm",
 	"darwin-386",
 	"darwin-amd64",
-	"darwin-arm",
+	"darwin-armv5",
+	"darwin-armv6",
+	"darwin-armv7",
 	"darwin-arm64",
 	"dragonfly-amd64",
 	"freebsd-386",
 	"freebsd-amd64",
-	"freebsd-arm",
+	"freebsd-armv5",
+	"freebsd-armv6",
+	"freebsd-armv7",
 	"linux-386",
 	"linux-amd64",
-	"linux-arm",
+	"linux-armv5",
+	"linux-armv6",
+	"linux-armv7",
 	"linux-arm64",
 	"linux-ppc64",
 	"linux-ppc64le",
@@ -41,10 +47,14 @@ var validOSArch = []string{
 	"linux-s390x",
 	"netbsd-386",
 	"netbsd-amd64",
-	"netbsd-arm",
+	"netbsd-armv5",
+	"netbsd-armv6",
+	"netbsd-armv7",
 	"openbsd-386",
 	"openbsd-amd64",
-	"openbsd-arm",
+	"openbsd-armv5",
+	"openbsd-armv6",
+	"openbsd-armv7",
 	"plan9-386",
 	"plan9-amd64",
 	"solaris-amd64",
@@ -257,6 +267,13 @@ func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 
 		r.IsWindows = matches[2] == "windows"
 
+		goArch := matches[3]
+		goArm := ""
+		if strings.HasPrefix(matches[3], "armv") {
+			goArch = "arm"
+			goArm = matches[3][4:]
+		}
+
 		for _, dir := range getMainPackages(ctx) {
 			goArgs := append([]string{r.GoTool, "-v", "-x"}, args...)
 			goArgs = append(goArgs, dir)
@@ -264,8 +281,14 @@ func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 			cmd.Env = append(
 				os.Environ(),
 				fmt.Sprintf("GOOS=%s", matches[2]),
-				fmt.Sprintf("GOARCH=%s", matches[3]),
+				fmt.Sprintf("GOARCH=%s", goArch),
 			)
+			if goArm != "" {
+				cmd.Env = append(
+					cmd.Env,
+					fmt.Sprintf("GOARM=%s", goArm),
+				)
+			}
 			if err := exec.Run(cmd); err != nil {
 				return err
 			}
