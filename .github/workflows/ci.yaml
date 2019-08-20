@@ -32,4 +32,5 @@ jobs:
         env:
           CGO_ENABLED: "0"
           TARGET: "${{ matrix.target }}"
+          DISTFILES_URL: "${{ secrets.DISTFILES_URL }}"
         run: ./yatr
