@@ -42,12 +42,8 @@ func Get(ctx *runners.Ctx) (Publisher, error) {
 	// github actions
 	if event, found := os.LookupEnv("GITHUB_EVENT_NAME"); found {
 		if event == "push" {
-			if os.Getenv("GITHUB_REF") != "refs/heads/master" {
-				return nil, fmt.Errorf("disabled, not master branch for push event")
-			}
-		} else if event == "create" {
-			if !strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/tags/") {
-				return nil, fmt.Errorf("disabled, not a tag for create event")
+			if ref := os.Getenv("GITHUB_REF"); ref != "refs/heads/master" && !strings.HasPrefix(ref, "refs/tags/") {
+				return nil, fmt.Errorf("disabled, not master branch nor a git tag")
 			}
 		} else {
 			return nil, fmt.Errorf("disabled, not push nor create event")
