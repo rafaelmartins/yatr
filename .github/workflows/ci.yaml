@@ -31,5 +31,5 @@ jobs:
       - name: Run yatr
         env:
           CGO_ENABLED: "0"
-          TARGET: {{ matrix.target }}
+          TARGET: "${{ matrix.target }}"
         run: ./yatr
