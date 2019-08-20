@@ -6,6 +6,13 @@ jobs:
     name: Build and Publish
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        target:
+          - distcheck
+          - dist-linux-amd64
+          - dist-darwin-amd64
+
     steps:
       - name: Set up Go
         uses: actions/setup-go@v1
@@ -20,4 +27,4 @@ jobs:
         run: GO111MODULE=on go build -x -v ./cmd/yatr
 
       - name: Run yatr
-        run: CGO_ENABLED=0 ./yatr
+        run: CGO_ENABLED=0 TARGET=${{ matrix.target }} ./yatr
