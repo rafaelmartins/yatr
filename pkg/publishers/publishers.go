@@ -3,6 +3,7 @@ package publishers
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/rafaelmartins/yatr/pkg/runners"
 )
@@ -35,6 +36,21 @@ func Get(ctx *runners.Ctx) (Publisher, error) {
 		}
 		if os.Getenv("TRAVIS_BRANCH") != "master" && len(os.Getenv("TRAVIS_TAG")) == 0 {
 			return nil, fmt.Errorf("disabled, not master branch nor a git tag")
+		}
+	}
+
+	// github actions
+	if event, found := os.LookupEnv("GITHUB_EVENT_NAME"); found {
+		if event == "push" {
+			if os.Getenv("GITHUB_REF") != "refs/heads/master" {
+				return nil, fmt.Errorf("disabled, not master branch for push event")
+			}
+		} else if event == "create" {
+			if !strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/tags/") {
+				return nil, fmt.Errorf("disabled, not a tag for create event")
+			}
+		} else {
+			return nil, fmt.Errorf("disabled, not push nor create event")
 		}
 	}
 
