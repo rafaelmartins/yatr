@@ -25,11 +25,11 @@ jobs:
 
       - name: Build yatr
         env:
-          GO111MODULE: "on"
+          GO111MODULE: on
         run: go build -x -v ./cmd/yatr
 
       - name: Run yatr
         env:
-          CGO_ENABLED: "0"
-          TARGET: "{{ matrix.target }}"
+          CGO_ENABLED: 0
+          TARGET: {{ matrix.target }}
         run: ./yatr
