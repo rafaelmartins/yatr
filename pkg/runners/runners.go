@@ -32,6 +32,7 @@ type Runner interface {
 var runners = []Runner{
 	&autotoolsRunner{},
 	&golangRunner{},
+	&scriptRunner{},
 }
 
 func Get(targetName string, srcDir string, buildDir string) (Runner, *Ctx) {

@@ -93,6 +93,7 @@ func main() {
 
 	var taskErr error
 	if len(target.TaskScript) > 0 {
+		log.Printf("Step: Task (Runner: %s)\n", run.Name())
 		taskErr = runners.RunTargetScript(ctx, proj, target.TaskScript, finalTaskArgs)
 	} else {
 		taskErr = run.Task(ctx, proj, finalTaskArgs)
