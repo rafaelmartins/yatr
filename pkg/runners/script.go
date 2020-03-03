@@ -6,6 +6,8 @@ import (
 	"log"
 	"path"
 	"time"
+
+	"github.com/rafaelmartins/yatr/pkg/git"
 )
 
 type scriptRunner struct{}
@@ -21,7 +23,27 @@ func (s *scriptRunner) Detect(ctx *Ctx) Runner {
 func (s *scriptRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 	log.Println("Step: Configure (Runner: script)")
 	projectName := path.Base(ctx.SrcDir)
-	projectVersion := fmt.Sprintf("%d", time.Now().Unix())
+
+	t := "version-git"
+	for _, arg := range args {
+		if arg == "version-date" || arg == "version-unix" || arg == "version-git" {
+			t = arg
+		}
+	}
+
+	projectVersion := ""
+	switch t {
+	case "version-date":
+		n := time.Now().UTC()
+		h, m, _ := n.Clock()
+		y, mo, d := n.Date()
+		projectVersion = fmt.Sprintf("%d%d%d%d%d", y, mo, d, h, m)
+	case "version-unix":
+		projectVersion = fmt.Sprintf("%d", time.Now().Unix())
+	case "version-git":
+		projectVersion = git.Version(ctx.SrcDir)
+	}
+
 	return &Project{Name: projectName, Version: projectVersion}, nil
 }
 
