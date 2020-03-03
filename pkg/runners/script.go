@@ -37,7 +37,7 @@ func (s *scriptRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 		n := time.Now().UTC()
 		h, m, _ := n.Clock()
 		y, mo, d := n.Date()
-		projectVersion = fmt.Sprintf("%d%d%d%d%d", y, mo, d, h, m)
+		projectVersion = fmt.Sprintf("%04d%02d%02d%02d%02d", y, mo, d, h, m)
 	case "version-unix":
 		projectVersion = fmt.Sprintf("%d", time.Now().Unix())
 	case "version-git":
