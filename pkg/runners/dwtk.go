@@ -10,7 +10,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
+	"github.com/rafaelmartins/yatr/pkg/compress"
 	"github.com/rafaelmartins/yatr/pkg/exec"
 	"github.com/rafaelmartins/yatr/pkg/fs"
 	"github.com/rafaelmartins/yatr/pkg/git"
@@ -65,7 +67,7 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		matches := reTarball.FindAllStringSubmatch(string(data), -1)
 		for _, m := range matches {
 			if m[2] == runtime.GOOS || m[3] == runtime.GOARCH {
-				url = "https://distfiles.rgm.io/avr-toolchain/avr-toolchain-" + m[4] + "/" + m[1]
+				url = fmt.Sprintf("https://distfiles.rgm.io/avr-toolchain/avr-toolchain-%s/%s", m[4], m[1])
 				file = m[1]
 			}
 		}
@@ -86,43 +88,67 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		}
 	}
 
+	root := filepath.Join(ctx.BuildDir, "__root__")
+
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append([]string{jobs}, args...)
 	cmd := exec.Cmd(ctx.SrcDir, "make", makeArgs...)
-	cmd.Env = os.Environ()
+	cmd.Env = append(
+		os.Environ(),
+		fmt.Sprintf("BUILDDIR=%s", root),
+	)
+	if path != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", path))
+	}
 
-	p := proj.Name + "-" + proj.Version
+	p := fmt.Sprintf("%s-%s", proj.Name, proj.Version)
 	if ctx.TargetName == "dist-avr" {
 		cmd.Env = append(cmd.Env, "AVR_RELEASE=1")
 	} else {
-		p += "-debug"
-	}
-	cmd.Env = append(cmd.Env, fmt.Sprintf("BUILDDIR=%s", filepath.Join(ctx.BuildDir, p)))
-
-	if path != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", path))
+		p = fmt.Sprintf("%s-debug", p)
 	}
 
 	if err := exec.Run(cmd); err != nil {
 		return err
 	}
 
-	licenseSrc := fs.FindLicense(ctx.SrcDir)
-	if licenseSrc != "" {
-		license := filepath.Join(ctx.BuildDir, p, filepath.Base(licenseSrc))
-		if err := fs.CopyFile(licenseSrc, license); err != nil {
-			return err
+	toCompress := []string{}
+
+	files, err := ioutil.ReadDir(root)
+	if err != nil {
+		return err
+	}
+
+	for _, fileInfo := range files {
+		if !fileInfo.Mode().IsRegular() {
+			continue
+		}
+		if n := fileInfo.Name(); strings.HasSuffix(n, ".hex") || strings.HasSuffix(n, ".elf") {
+			toCompress = append(toCompress, n)
 		}
 	}
 
-	return exec.Run(exec.Cmd(ctx.BuildDir, "tar", "-cvzf", p+".tar.gz", p))
+	licenseSrc := fs.FindLicense(ctx.SrcDir)
+	if licenseSrc != "" {
+		licenseDst := filepath.Join(root, filepath.Base(licenseSrc))
+		if err := fs.CopyFile(licenseSrc, licenseDst); err != nil {
+			return err
+		}
+		toCompress = append(toCompress, filepath.Base(licenseSrc))
+	}
+
+	data, err := compress.TarGzip(root, p, toCompress)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filepath.Join(ctx.BuildDir, fmt.Sprintf("%s.tar.gz", p)), data, 0666)
 }
 
 func (d *dwtkRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
-	p := proj.Name + "-" + proj.Version
+	p := fmt.Sprintf("%s-%s", proj.Name, proj.Version)
 	if ctx.TargetName == "dist-avr-debug" {
-		p += "-debug"
+		p = fmt.Sprintf("%s-debug", p)
 	}
 
-	return []string{p + ".tar.gz"}, nil
+	return []string{fmt.Sprintf("%s.tar.gz", p)}, nil
 }
