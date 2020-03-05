@@ -32,6 +32,7 @@ type Runner interface {
 var runners = []Runner{
 	&autotoolsRunner{},
 	&golangRunner{},
+	&dwtkRunner{},
 	&scriptRunner{},
 }
 
