@@ -25,13 +25,10 @@ func (d *dwtkRunner) Name() string {
 	return "dwtk"
 }
 
-func (d *dwtkRunner) Detect(ctx *Ctx) Runner {
+func (d *dwtkRunner) Detect(ctx *Ctx) bool {
 	path := filepath.Join(ctx.SrcDir, "dwtk-config.mk")
-	if _, err := os.Stat(path); err == nil {
-		return d
-	}
-
-	return nil
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func (d *dwtkRunner) Configure(ctx *Ctx, args []string) (*Project, error) {

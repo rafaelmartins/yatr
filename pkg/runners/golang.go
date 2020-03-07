@@ -187,7 +187,7 @@ func (r *golangRunner) Name() string {
 	return "golang"
 }
 
-func (r *golangRunner) Detect(ctx *Ctx) Runner {
+func (r *golangRunner) Detect(ctx *Ctx) bool {
 	found := false
 
 	filepath.Walk(ctx.SrcDir, func(path string, info os.FileInfo, err error) error {
@@ -210,11 +210,7 @@ func (r *golangRunner) Detect(ctx *Ctx) Runner {
 		return nil
 	})
 
-	if found {
-		return &golangRunner{}
-	}
-
-	return nil
+	return found
 }
 
 func (r *golangRunner) Configure(ctx *Ctx, args []string) (*Project, error) {

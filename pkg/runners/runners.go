@@ -23,7 +23,7 @@ type Project struct {
 
 type Runner interface {
 	Name() string
-	Detect(ctx *Ctx) Runner
+	Detect(ctx *Ctx) bool
 	Configure(ctx *Ctx, args []string) (*Project, error)
 	Task(ctx *Ctx, proj *Project, args []string) error
 	Collect(ctx *Ctx, proj *Project, args []string) ([]string, error)
@@ -48,8 +48,8 @@ func Get(targetName string, srcDir string, buildDir string) (Runner, *Ctx) {
 	os.MkdirAll(ctx.BuildDir, 0777)
 
 	for _, v := range runners {
-		if r := v.Detect(ctx); r != nil {
-			return r, ctx
+		if v.Detect(ctx) {
+			return v, ctx
 		}
 	}
 

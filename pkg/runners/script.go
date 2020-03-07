@@ -15,8 +15,8 @@ func (s *scriptRunner) Name() string {
 	return "script"
 }
 
-func (s *scriptRunner) Detect(ctx *Ctx) Runner {
-	return s
+func (s *scriptRunner) Detect(ctx *Ctx) bool {
+	return true
 }
 
 func (s *scriptRunner) Configure(ctx *Ctx, args []string) (*Project, error) {

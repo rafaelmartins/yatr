@@ -57,13 +57,10 @@ func (r *autotoolsRunner) Name() string {
 	return "autotools"
 }
 
-func (r *autotoolsRunner) Detect(ctx *Ctx) Runner {
+func (r *autotoolsRunner) Detect(ctx *Ctx) bool {
 	path := path.Join(ctx.SrcDir, "configure.ac")
-	if _, err := os.Stat(path); err == nil {
-		return &autotoolsRunner{}
-	}
-
-	return nil
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
