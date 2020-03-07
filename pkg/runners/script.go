@@ -3,7 +3,6 @@ package runners
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path"
 	"time"
 
@@ -21,7 +20,6 @@ func (s *scriptRunner) Detect(ctx *Ctx) Runner {
 }
 
 func (s *scriptRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
-	log.Println("Step: Configure (Runner: script)")
 	projectName := path.Base(ctx.SrcDir)
 
 	t := "version-git"
@@ -52,8 +50,6 @@ func (s *scriptRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 }
 
 func (s *scriptRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
-	log.Println("Step: Collect (Runner: script)")
-
 	files, err := ioutil.ReadDir(ctx.BuildDir)
 	if err != nil {
 		return nil, err

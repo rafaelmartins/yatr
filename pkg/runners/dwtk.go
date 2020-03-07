@@ -3,7 +3,6 @@ package runners
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	execStd "os/exec"
@@ -36,7 +35,6 @@ func (d *dwtkRunner) Detect(ctx *Ctx) Runner {
 }
 
 func (d *dwtkRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
-	log.Println("Step: Configure (Runner: dwtk)")
 	return &Project{
 		Name:    filepath.Base(ctx.SrcDir),
 		Version: git.Version(ctx.SrcDir),
@@ -44,8 +42,6 @@ func (d *dwtkRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 }
 
 func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
-	log.Println("Step: Task (Runner: dwtk)")
-
 	if ctx.TargetName != "dist-avr" && ctx.TargetName != "dist-avr-debug" {
 		return fmt.Errorf("unsupported target: %s", ctx.TargetName)
 	}

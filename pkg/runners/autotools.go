@@ -67,8 +67,6 @@ func (r *autotoolsRunner) Detect(ctx *Ctx) Runner {
 }
 
 func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
-	log.Println("Step: Configure (Runner: autotools)")
-
 	cmd := exec.Cmd(ctx.SrcDir, "autoreconf", "--warnings=all", "--install", "--force")
 	if err := exec.Run(cmd); err != nil {
 		return nil, err
@@ -97,8 +95,6 @@ func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 }
 
 func (r *autotoolsRunner) Task(ctx *Ctx, proj *Project, args []string) error {
-	log.Println("Step: Task (Runner: autotools)")
-
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.TargetName)
 
@@ -106,8 +102,6 @@ func (r *autotoolsRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 }
 
 func (r *autotoolsRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
-	log.Println("Step: Collect (Runner: autotools)")
-
 	files, err := ioutil.ReadDir(ctx.BuildDir)
 	if err != nil {
 		return nil, err

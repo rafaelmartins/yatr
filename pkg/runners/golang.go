@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	goExec "os/exec"
 	"path"
@@ -219,8 +218,6 @@ func (r *golangRunner) Detect(ctx *Ctx) Runner {
 }
 
 func (r *golangRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
-	log.Println("Step: Configure (Runner: golang)")
-
 	// guess project name
 	projectName := path.Base(ctx.SrcDir)
 
@@ -235,8 +232,6 @@ func (r *golangRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 }
 
 func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
-	log.Println("Step: Task (Runner: golang)")
-
 	if ctx.TargetName == "distcheck" {
 		r.GoTool = "test"
 	} else if strings.HasPrefix(ctx.TargetName, "dist-") {
@@ -305,8 +300,6 @@ func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 }
 
 func (r *golangRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
-	log.Println("Step: Collect (Runner: golang)")
-
 	var builtFiles []string
 
 	if r.GoTool == "build" {

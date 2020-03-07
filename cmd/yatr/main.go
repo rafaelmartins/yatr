@@ -67,6 +67,8 @@ func main() {
 	log.Println("")
 
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
+
+	log.Printf("Step: Configure (Runner: %s)\n", run.Name())
 	proj, err := run.Configure(ctx, configureArgs)
 	if err != nil {
 		log.Fatal("Error: ", err)
@@ -91,9 +93,9 @@ func main() {
 		finalTaskArgs = append(finalTaskArgs, b.String())
 	}
 
+	log.Printf("Step: Task (Runner: %s)\n", run.Name())
 	var taskErr error
 	if len(target.TaskScript) > 0 {
-		log.Printf("Step: Task (Runner: %s)\n", run.Name())
 		taskErr = runners.RunTargetScript(ctx, proj, target.TaskScript, finalTaskArgs)
 	} else {
 		taskErr = run.Task(ctx, proj, finalTaskArgs)
@@ -103,6 +105,7 @@ func main() {
 		log.Fatal("Error: ", taskErr)
 	}
 
+	log.Printf("Step: Collect (Runner: %s)\n", run.Name())
 	archives, err := run.Collect(ctx, proj, finalTaskArgs)
 	if err != nil {
 		log.Println("Warning: ", err)
