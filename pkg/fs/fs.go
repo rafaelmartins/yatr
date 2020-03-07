@@ -30,6 +30,12 @@ func FindLicense(dir string) string {
 
 func FindReadme(dir string) string {
 	for _, entry := range readmeFiles {
+		bentry := filepath.Join("build-aux", entry)
+		if _, err := os.Stat(filepath.Join(dir, bentry)); err == nil {
+			return bentry
+		}
+	}
+	for _, entry := range readmeFiles {
 		if _, err := os.Stat(filepath.Join(dir, entry)); err == nil {
 			return entry
 		}

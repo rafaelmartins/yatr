@@ -78,7 +78,7 @@ func supportModules() bool {
 	return cmd.Run() == nil
 }
 
-func getFullLicense(ctx *Ctx) string {
+func generateFullLicense(ctx *Ctx) (bool, error) {
 	gomodFile := filepath.Join(ctx.SrcDir, "go.mod")
 	vendorDir := filepath.Join(ctx.SrcDir, "vendor")
 
@@ -94,22 +94,22 @@ func getFullLicense(ctx *Ctx) string {
 	// get main license
 	mainLicense := fs.FindLicense(ctx.SrcDir)
 	if len(mainLicense) == 0 {
-		return ""
+		return false, nil
 	}
 
-	f, err := os.Create(filepath.Join(ctx.BuildDir, mainLicense))
+	f, err := os.Create(filepath.Join(ctx.BuildDir, "license.txt"))
 	if err != nil {
-		return ""
+		return false, err
 	}
 	defer f.Close()
 
 	content, err := ioutil.ReadFile(filepath.Join(ctx.SrcDir, mainLicense))
 	if err != nil {
-		return ""
+		return false, err
 	}
 
 	if _, err := f.Write(content); err != nil {
-		return ""
+		return false, err
 	}
 
 	filepath.Walk(vendorDir, func(path string, info os.FileInfo, err error) error {
@@ -135,7 +135,7 @@ func getFullLicense(ctx *Ctx) string {
 		return nil
 	})
 
-	return mainLicense
+	return true, nil
 }
 
 func getMainPackages(ctx *Ctx) []string {
@@ -309,18 +309,22 @@ func (r *golangRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string
 			toCompress = append(toCompress, binaryName)
 		}
 
-		license := getFullLicense(ctx)
-		if len(license) > 0 {
-			toCompress = append(toCompress, license)
+		license, err := generateFullLicense(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if license {
+			toCompress = append(toCompress, "license.txt")
 		}
 
 		readme := fs.FindReadme(ctx.SrcDir)
 		if len(readme) > 0 {
-			fs.CopyFile(
-				filepath.Join(ctx.SrcDir, readme),
-				filepath.Join(ctx.BuildDir, readme),
-			)
-			toCompress = append(toCompress, readme)
+			readmeSrc := filepath.Join(ctx.SrcDir, readme)
+			readmeDst := filepath.Join(ctx.BuildDir, "readme.txt")
+			if err := fs.CopyFile(readmeSrc, readmeDst); err != nil {
+				return nil, err
+			}
+			toCompress = append(toCompress, "readme.txt")
 		}
 
 		fileExtension := "tar.gz"

@@ -121,13 +121,24 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		}
 	}
 
-	licenseSrc := fs.FindLicense(ctx.SrcDir)
-	if licenseSrc != "" {
-		licenseDst := filepath.Join(root, filepath.Base(licenseSrc))
+	license := fs.FindLicense(ctx.SrcDir)
+	if license != "" {
+		licenseSrc := filepath.Join(ctx.SrcDir, license)
+		licenseDst := filepath.Join(root, "license.txt")
 		if err := fs.CopyFile(licenseSrc, licenseDst); err != nil {
 			return err
 		}
-		toCompress = append(toCompress, filepath.Base(licenseSrc))
+		toCompress = append(toCompress, "license.txt")
+	}
+
+	readme := fs.FindReadme(ctx.SrcDir)
+	if readme != "" {
+		readmeSrc := filepath.Join(ctx.SrcDir, readme)
+		readmeDst := filepath.Join(root, "readme.txt")
+		if err := fs.CopyFile(readmeSrc, readmeDst); err != nil {
+			return err
+		}
+		toCompress = append(toCompress, "readme.txt")
 	}
 
 	filePath := filepath.Join(ctx.BuildDir, fmt.Sprintf("%s.tar.gz", p))
