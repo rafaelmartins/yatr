@@ -112,6 +112,8 @@ func main() {
 	}
 	log.Println("")
 
+	archives = fs.CheckArchives(ctx.BuildDir, archives)
+
 	if len(target.ArchiveFilter) > 0 {
 		archives = fs.FilterArchives(archives, target.ArchiveFilter)
 	}

@@ -57,6 +57,16 @@ func CopyFile(srcName string, dstName string) error {
 	return nil
 }
 
+func CheckArchives(dir string, archives []string) []string {
+	rv := []string{}
+	for _, archive := range archives {
+		if _, err := os.Stat(filepath.Join(dir, archive)); err == nil {
+			rv = append(rv, archive)
+		}
+	}
+	return rv
+}
+
 func FilterArchives(archives []string, pattern string) []string {
 	rv := []string{}
 	for _, archive := range archives {
