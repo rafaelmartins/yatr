@@ -341,22 +341,21 @@ func (r *golangRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string
 		filePrefix := fmt.Sprintf("%s-%s-%s", proj.Name, r.OsArch, proj.Version)
 		fileName := fmt.Sprintf("%s.%s", filePrefix, fileExtension)
 
-		var data []byte
+		filePath := filepath.Join(ctx.BuildDir, fileName)
+		f, err := os.Create(filePath)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
 		if r.IsWindows {
-			var err error
-			if data, err = compress.Zip(ctx.BuildDir, filePrefix, toCompress); err != nil {
+			if err := compress.Zip(ctx.BuildDir, filePrefix, toCompress, f); err != nil {
 				return nil, err
 			}
 		} else {
-			var err error
-			if data, err = compress.TarGzip(ctx.BuildDir, filePrefix, toCompress); err != nil {
+			if err := compress.TarGzip(ctx.BuildDir, filePrefix, toCompress, f); err != nil {
 				return nil, err
 			}
-		}
-
-		filePath := filepath.Join(ctx.BuildDir, fileName)
-		if err := ioutil.WriteFile(filePath, data, 0666); err != nil {
-			return nil, err
 		}
 
 		builtFiles = []string{fileName}

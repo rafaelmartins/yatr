@@ -137,11 +137,14 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		toCompress = append(toCompress, filepath.Base(licenseSrc))
 	}
 
-	data, err := compress.TarGzip(root, p, toCompress)
+	filePath := filepath.Join(ctx.BuildDir, fmt.Sprintf("%s.tar.gz", p))
+	f, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filepath.Join(ctx.BuildDir, fmt.Sprintf("%s.tar.gz", p)), data, 0666)
+	defer f.Close()
+
+	return compress.TarGzip(root, p, toCompress, f)
 }
 
 func (d *dwtkRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
