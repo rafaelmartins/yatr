@@ -18,6 +18,7 @@ type Target struct {
 	TaskScript           string   `yaml:"task_script"`
 	ArchiveFilter        string   `yaml:"archive_filter"`
 	ArchiveExtractFilter string   `yaml:"archive_extract_filter"`
+	PublishOnFailure     bool     `yaml:"publish_on_failure"`
 }
 
 func Read(filename string) (*Config, error) {

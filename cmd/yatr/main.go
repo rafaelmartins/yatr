@@ -23,7 +23,7 @@ func main() {
 
 	conf, err := config.Read(".yatr.yml")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error: ", err)
 	}
 
 	targetName, ok := os.LookupEnv("TARGET")
@@ -37,7 +37,7 @@ func main() {
 
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error: ", err)
 	}
 
 	run, ctx := runners.Get(targetName, dir, path.Join(dir, "build"))
@@ -62,14 +62,14 @@ func main() {
 
 	log.Println("Step: Git repository unshallow")
 	if err := git.Unshallow(ctx.SrcDir); err != nil {
-		log.Fatal(err)
+		log.Fatal("Error: ", err)
 	}
 	log.Println("")
 
 	configureArgs := append(conf.DefaultConfigureArgs, target.ConfigureArgs...)
 	proj, err := run.Configure(ctx, configureArgs)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error: ", err)
 	}
 	log.Println("")
 
@@ -80,12 +80,12 @@ func main() {
 	for _, arg := range taskArgs {
 		t, err := tmpl.Parse(arg)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Error: ", err)
 		}
 
 		b := new(bytes.Buffer)
 		if err := t.Execute(b, proj); err != nil {
-			log.Fatal(err)
+			log.Fatal("Error: ", err)
 		}
 
 		finalTaskArgs = append(finalTaskArgs, b.String())
@@ -99,10 +99,13 @@ func main() {
 		taskErr = run.Task(ctx, proj, finalTaskArgs)
 	}
 	log.Println("")
+	if taskErr != nil && !target.PublishOnFailure {
+		log.Fatal("Error: ", taskErr)
+	}
 
 	archives, err := run.Collect(ctx, proj, finalTaskArgs)
 	if err != nil {
-		log.Println("Warning:", err)
+		log.Println("Warning: ", err)
 	}
 	log.Println("")
 
@@ -125,7 +128,7 @@ func main() {
 			log.Printf("Step: Publish: (%s)", pubErr)
 		} else {
 			if err := pub.Publish(ctx, proj, archives, target.ArchiveExtractFilter); err != nil {
-				log.Fatal(err)
+				log.Fatal("Error: ", err)
 			}
 		}
 	} else {
@@ -134,7 +137,9 @@ func main() {
 
 	log.Println("")
 	if taskErr != nil {
-		log.Fatal("!!! TASK FAILED !!!")
+		log.Println("!!! TASK FAILED !!!")
+		log.Println()
+		log.Fatal("Error: ", taskErr)
 	} else {
 		log.Println("All done! \\o/")
 	}
