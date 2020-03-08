@@ -132,6 +132,7 @@ func main() {
 		if pubErr != nil {
 			log.Printf("Step: Publish: (%s)", pubErr)
 		} else {
+			log.Printf("Step: Publish (Publisher: %s)\n", pub.Name())
 			if err := pub.Publish(ctx, proj, archives, target.ArchiveExtractFilter); err != nil {
 				log.Fatal("Error: ", err)
 			}

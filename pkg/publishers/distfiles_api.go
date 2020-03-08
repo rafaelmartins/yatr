@@ -33,8 +33,6 @@ func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
 }
 
 func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {
-	log.Println("Step: Publish (Publisher: distfiles-api)")
-
 	for _, archive := range archives {
 		log.Println("    - Uploading archive:", archive)
 
