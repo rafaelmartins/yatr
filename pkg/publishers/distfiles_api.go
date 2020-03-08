@@ -24,13 +24,12 @@ func (p *distfilesApiPublisher) Name() string {
 	return "distfiles-api"
 }
 
-func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) Publisher {
+func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
 	distfilesApiUrl, found := os.LookupEnv("DISTFILES_URL")
 	if found {
-		return &distfilesApiPublisher{Url: distfilesApiUrl}
+		p.Url = distfilesApiUrl
 	}
-
-	return nil
+	return found
 }
 
 func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {

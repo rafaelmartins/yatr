@@ -10,7 +10,7 @@ import (
 
 type Publisher interface {
 	Name() string
-	Detect(ctx *runners.Ctx) Publisher
+	Detect(ctx *runners.Ctx) bool
 	Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error
 }
 
@@ -51,8 +51,8 @@ func Get(ctx *runners.Ctx) (Publisher, error) {
 	}
 
 	for _, v := range publishers {
-		if r := v.Detect(ctx); r != nil {
-			return r, nil
+		if v.Detect(ctx) {
+			return v, nil
 		}
 	}
 
