@@ -26,7 +26,7 @@ func (p *distfilesApiPublisher) Name() string {
 
 func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
 	distfilesApiUrl, found := os.LookupEnv("DISTFILES_URL")
-	if found {
+	if found && len(distfilesApiUrl) > 0 {
 		p.Url = distfilesApiUrl
 	}
 	return found
