@@ -21,7 +21,7 @@ var publishers = []Publisher{
 func Get(ctx *runners.Ctx) (Publisher, error) {
 
 	// publisher disabled by the user
-	if _, found := os.LookupEnv("DISABLE_PUBLISHER"); found {
+	if v := strings.ToLower(os.Getenv("DISABLE_PUBLISHER")); v == "1" && v == "true" && v == "on" {
 		return nil, fmt.Errorf("disabled by DISABLE_PUBLISHER")
 	}
 
