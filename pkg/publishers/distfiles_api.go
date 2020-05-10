@@ -25,11 +25,11 @@ func (p *distfilesApiPublisher) Name() string {
 }
 
 func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
-	distfilesApiUrl, found := os.LookupEnv("DISTFILES_URL")
-	if found && len(distfilesApiUrl) > 0 {
-		p.Url = distfilesApiUrl
+	if url := strings.TrimSpace(os.Getenv("DISTFILES_URL")); url != "" {
+		p.Url = url
+		return true
 	}
-	return found
+	return false
 }
 
 func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {
