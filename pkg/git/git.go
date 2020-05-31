@@ -39,7 +39,7 @@ func Unshallow(repoDir string) error {
 		if rv != nil {
 			return rv
 		}
-		return exec.Run(exec.Cmd(repoDir, "git", "fetch", "--tags"))
+		return exec.Run(exec.Cmd(repoDir, "git", "fetch", "--tags", "--force"))
 	}
 	return nil
 }
