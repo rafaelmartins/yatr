@@ -17,9 +17,14 @@ import (
 	"github.com/rafaelmartins/yatr/pkg/git"
 )
 
-var reTarball = regexp.MustCompile(`"(avr-toolchain-([a-z0-9]+)-([a-z0-9]+)-([0-9]+)\.tar\.xz)"`)
+var (
+	reTarball   = regexp.MustCompile(`"(avr-toolchain-([a-z0-9]+)-([a-z0-9]+)-([0-9]+)\.tar\.xz)"`)
+	reAvrTarget = regexp.MustCompile(`^dist-([a-z0-9]+)(-debug)?$`)
+)
 
-type dwtkRunner struct{}
+type dwtkRunner struct {
+	Prefix string
+}
 
 func (d *dwtkRunner) Name() string {
 	return "dwtk"
@@ -39,9 +44,13 @@ func (d *dwtkRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 }
 
 func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
-	if ctx.TargetName != "dist-avr" && ctx.TargetName != "dist-avr-debug" {
+	matches := reAvrTarget.FindStringSubmatch(ctx.TargetName)
+	if len(matches) == 0 {
 		return fmt.Errorf("unsupported target: %s", ctx.TargetName)
 	}
+
+	mcu := matches[1]
+	release := len(matches[2]) == 0
 
 	path := ""
 	if _, err := execStd.LookPath("avr-gcc"); err != nil { // no toolchain found
@@ -94,12 +103,20 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PATH=%s", path))
 	}
 
-	p := fmt.Sprintf("%s-%s", proj.Name, proj.Version)
-	if ctx.TargetName == "dist-avr" {
+	d.Prefix = proj.Name
+
+	if mcu != "avr" {
+		d.Prefix += "-" + mcu
+		cmd.Env = append(cmd.Env, fmt.Sprintf("AVR_MCU=%s", mcu))
+	}
+
+	if release {
 		cmd.Env = append(cmd.Env, "AVR_RELEASE=1")
 	} else {
-		p = fmt.Sprintf("%s-debug", p)
+		d.Prefix += "-debug"
 	}
+
+	d.Prefix += "-" + proj.Version
 
 	if err := exec.Run(cmd); err != nil {
 		return err
@@ -141,21 +158,16 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		toCompress = append(toCompress, "readme.txt")
 	}
 
-	filePath := filepath.Join(ctx.BuildDir, fmt.Sprintf("%s.tar.gz", p))
+	filePath := filepath.Join(ctx.BuildDir, fmt.Sprintf("%s.tar.gz", d.Prefix))
 	f, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	return compress.TarGzip(root, p, toCompress, f)
+	return compress.TarGzip(root, d.Prefix, toCompress, f)
 }
 
 func (d *dwtkRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
-	p := fmt.Sprintf("%s-%s", proj.Name, proj.Version)
-	if ctx.TargetName == "dist-avr-debug" {
-		p = fmt.Sprintf("%s-debug", p)
-	}
-
-	return []string{fmt.Sprintf("%s.tar.gz", p)}, nil
+	return []string{fmt.Sprintf("%s.tar.gz", d.Prefix)}, nil
 }
