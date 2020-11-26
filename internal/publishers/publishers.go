@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rafaelmartins/yatr/internal/publishers/distfiles_api"
 	"github.com/rafaelmartins/yatr/internal/runners"
 )
 
@@ -15,7 +16,7 @@ type Publisher interface {
 }
 
 var publishers = []Publisher{
-	&distfilesApiPublisher{},
+	&distfiles_api.DistfilesApiPublisher{},
 }
 
 func Get(ctx *runners.Ctx) (Publisher, error) {

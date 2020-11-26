@@ -1,10 +1,10 @@
-package publishers
+package distfiles_api
 
 import (
 	"bytes"
 	"crypto/sha512"
-	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"mime/multipart"
@@ -16,15 +16,15 @@ import (
 	"github.com/rafaelmartins/yatr/internal/runners"
 )
 
-type distfilesApiPublisher struct {
+type DistfilesApiPublisher struct {
 	Url string
 }
 
-func (p *distfilesApiPublisher) Name() string {
+func (p *DistfilesApiPublisher) Name() string {
 	return "distfiles-api"
 }
 
-func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
+func (p *DistfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
 	if url := strings.TrimSpace(os.Getenv("DISTFILES_URL")); url != "" {
 		p.Url = url
 		return true
@@ -32,11 +32,11 @@ func (p *distfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
 	return false
 }
 
-func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {
+func (p *DistfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {
 	for _, archive := range archives {
 		log.Println("    - Uploading archive:", archive)
 
-		f := filepath.Join(ctx.BuildDir, archive)
+		fn := filepath.Join(ctx.BuildDir, archive)
 
 		body := new(bytes.Buffer)
 		writer := multipart.NewWriter(body)
@@ -45,16 +45,20 @@ func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project,
 			return err
 		}
 
-		contents, err := ioutil.ReadFile(f)
-		if err != nil {
+		checksum := sha512.New()
+
+		if err := func() error {
+			f, err := os.Open(fn)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			_, err = io.Copy(io.MultiWriter(part, checksum), f)
+			return err
+		}(); err != nil {
 			return err
 		}
-
-		part.Write(contents)
-
-		checksum := sha512.Sum512(contents)
-		checksumHex := hex.EncodeToString(checksum[:])
-		checksumStr := fmt.Sprintf("%s  %s", checksumHex, archive)
 
 		extract := false
 		if len(pattern) > 0 {
@@ -73,7 +77,7 @@ func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project,
 		reqParams := map[string]string{
 			"project": proj.Name,
 			"version": proj.Version,
-			"sha512":  checksumStr,
+			"sha512":  fmt.Sprintf("%x  %s", checksum.Sum(nil), archive),
 			"extract": extractStr,
 		}
 
@@ -83,22 +87,20 @@ func (p *distfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project,
 			}
 		}
 
-		contentType := writer.FormDataContentType()
-
 		if err := writer.Close(); err != nil {
 			return err
 		}
 
-		resp, err := http.Post(p.Url, contentType, body)
+		resp, err := http.Post(p.Url, writer.FormDataContentType(), body)
 		if err != nil {
 			return err
 		}
 
 		bodyContent, err := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 
 		bodyString := strings.Trim(string(bodyContent), " \t\n")
 
