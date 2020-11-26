@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	goExec "os/exec"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/rafaelmartins/yatr/internal/compress"
-	"github.com/rafaelmartins/yatr/internal/exec"
+	"github.com/rafaelmartins/yatr/internal/executils"
 	"github.com/rafaelmartins/yatr/internal/fs"
 	"github.com/rafaelmartins/yatr/internal/git"
 )
@@ -72,7 +72,7 @@ type golangRunner struct {
 }
 
 func supportModules() bool {
-	cmd := goExec.Command("go", "help", "mod")
+	cmd := exec.Command("go", "help", "mod")
 	cmd.Stdout = ioutil.Discard
 	cmd.Stderr = ioutil.Discard
 	return cmd.Run() == nil
@@ -85,8 +85,10 @@ func generateFullLicense(ctx *Ctx) (bool, error) {
 	// create vendor directory if not available
 	if _, err := os.Stat(gomodFile); err == nil {
 		if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
-			if mod := os.Getenv("GO111MODULE"); mod == "on" {
-				exec.Run(exec.Cmd(ctx.SrcDir, "go", "mod", "vendor"))
+			cmd := exec.Command("go", "mod", "vendor")
+			cmd.Dir = ctx.SrcDir
+			if err := executils.Run(cmd); err != nil {
+				return false, err
 			}
 		}
 	}
@@ -268,7 +270,8 @@ func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 		for _, dir := range getMainPackages(ctx) {
 			goArgs := append([]string{r.GoTool, "-v", "-x"}, args...)
 			goArgs = append(goArgs, dir)
-			cmd := exec.Cmd(ctx.BuildDir, "go", goArgs...)
+			cmd := exec.Command("go", goArgs...)
+			cmd.Dir = ctx.BuildDir
 			cmd.Env = append(
 				os.Environ(),
 				fmt.Sprintf("GOOS=%s", matches[2]),
@@ -280,16 +283,16 @@ func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 					fmt.Sprintf("GOARM=%s", goArm),
 				)
 			}
-			if err := exec.Run(cmd); err != nil {
+			if err := executils.Run(cmd); err != nil {
 				return err
 			}
 
 			r.Binaries = append(r.Binaries, path.Base(dir))
 		}
 	} else {
-		goArgs := append([]string{r.GoTool, "-v"}, args...)
-		cmd := exec.Cmd(ctx.SrcDir, "go", goArgs...)
-		return exec.Run(cmd)
+		cmd := exec.Command("go", append([]string{r.GoTool, "-v"}, args...)...)
+		cmd.Dir = ctx.SrcDir
+		return executils.Run(cmd)
 	}
 
 	return nil

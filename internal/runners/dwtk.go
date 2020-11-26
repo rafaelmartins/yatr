@@ -5,14 +5,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	execStd "os/exec"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 
 	"github.com/rafaelmartins/yatr/internal/compress"
-	"github.com/rafaelmartins/yatr/internal/exec"
+	"github.com/rafaelmartins/yatr/internal/executils"
 	"github.com/rafaelmartins/yatr/internal/fs"
 	"github.com/rafaelmartins/yatr/internal/git"
 )
@@ -53,7 +53,7 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	release := len(matches[2]) == 0
 
 	path := ""
-	if _, err := execStd.LookPath("avr-gcc"); err != nil { // no toolchain found
+	if _, err := exec.LookPath("avr-gcc"); err != nil { // no toolchain found
 		resp, err := http.Get("https://distfiles.rgm.io/avr-toolchain/LATEST/")
 		if err != nil {
 			return err
@@ -77,10 +77,16 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 			return fmt.Errorf("no toolchain found")
 		}
 
-		if err := exec.Run(exec.Cmd(ctx.BuildDir, "wget", url)); err != nil {
+		cmd := exec.Command("wget", url)
+		cmd.Dir = ctx.BuildDir
+		if err := executils.Run(cmd); err != nil {
 			return err
 		}
-		if err := exec.Run(exec.Cmd(ctx.BuildDir, "tar", "-xvf", file)); err != nil {
+
+		// fixme: decompress natively
+		cmd = exec.Command("tar", "-xvf", file)
+		cmd.Dir = ctx.BuildDir
+		if err := executils.Run(cmd); err != nil {
 			return err
 		}
 
@@ -93,8 +99,8 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	root := filepath.Join(ctx.BuildDir, "__root__")
 
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
-	makeArgs := append([]string{jobs}, args...)
-	cmd := exec.Cmd(ctx.SrcDir, "make", makeArgs...)
+	cmd := exec.Command("make", append([]string{jobs}, args...)...)
+	cmd.Dir = ctx.SrcDir
 	cmd.Env = append(
 		os.Environ(),
 		fmt.Sprintf("BUILDDIR=%s", root),
@@ -118,7 +124,7 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 
 	d.Prefix += "-" + proj.Version
 
-	if err := exec.Run(cmd); err != nil {
+	if err := executils.Run(cmd); err != nil {
 		return err
 	}
 

@@ -3,11 +3,12 @@ package runners
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
 
-	"github.com/rafaelmartins/yatr/internal/exec"
+	"github.com/rafaelmartins/yatr/internal/executils"
 )
 
 type Ctx struct {
@@ -60,7 +61,8 @@ func RunTargetScript(ctx *Ctx, proj *Project, taskScript string, taskArgs []stri
 	if !path.IsAbs(taskScript) {
 		taskScript = filepath.Join(ctx.SrcDir, taskScript)
 	}
-	cmd := exec.Cmd(ctx.BuildDir, taskScript, taskArgs...)
+	cmd := exec.Command(taskScript, taskArgs...)
+	cmd.Dir = ctx.BuildDir
 	cmd.Env = append(
 		os.Environ(),
 		fmt.Sprintf("SRCDIR=%s", ctx.SrcDir),
@@ -70,5 +72,5 @@ func RunTargetScript(ctx *Ctx, proj *Project, taskScript string, taskArgs []stri
 		fmt.Sprintf("P=%s-%s", proj.Name, proj.Version),
 		fmt.Sprintf("MAKE_CMD=make -j%d", runtime.NumCPU()+1),
 	)
-	return exec.Run(cmd)
+	return executils.Run(cmd)
 }

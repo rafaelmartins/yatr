@@ -5,13 +5,14 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/internal/exec"
+	"github.com/rafaelmartins/yatr/internal/executils"
 )
 
 var autotoolsDistExts = []string{
@@ -64,8 +65,9 @@ func (r *autotoolsRunner) Detect(ctx *Ctx) bool {
 }
 
 func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
-	cmd := exec.Cmd(ctx.SrcDir, "autoreconf", "--warnings=all", "--install", "--force")
-	if err := exec.Run(cmd); err != nil {
+	cmd := exec.Command("autoreconf", "--warnings=all", "--install", "--force")
+	cmd.Dir = ctx.SrcDir
+	if err := executils.Run(cmd); err != nil {
 		return nil, err
 	}
 	log.Println("")
@@ -84,18 +86,20 @@ func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 		return nil, fmt.Errorf("Error: `configure` script is not executable")
 	}
 
-	cmd = exec.Cmd(ctx.BuildDir, configure, args...)
+	cmd = exec.Command(configure, args...)
+	cmd.Dir = ctx.BuildDir
+	err = executils.Run(cmd)
 
-	rv := exec.Run(cmd)
-
-	return getAutotoolsProject(ctx), rv
+	return getAutotoolsProject(ctx), err
 }
 
 func (r *autotoolsRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.TargetName)
 
-	return exec.Run(exec.Cmd(ctx.BuildDir, "make", makeArgs...))
+	cmd := exec.Command("make", makeArgs...)
+	cmd.Dir = ctx.BuildDir
+	return executils.Run(cmd)
 }
 
 func (r *autotoolsRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {

@@ -3,16 +3,16 @@ package git
 import (
 	"bytes"
 	"os"
-	goExec "os/exec"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/internal/exec"
+	"github.com/rafaelmartins/yatr/internal/executils"
 )
 
 func Version(repoDir string) string {
 	var out bytes.Buffer
-	cmd := goExec.Command("git", "describe", "--abbrev=4", "HEAD")
+	cmd := exec.Command("git", "describe", "--abbrev=4", "HEAD")
 	cmd.Dir = repoDir
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
@@ -34,12 +34,17 @@ func Version(repoDir string) string {
 }
 
 func Unshallow(repoDir string) error {
-	if _, err := os.Stat(filepath.Join(repoDir, ".git", "shallow")); err == nil {
-		rv := exec.Run(exec.Cmd(repoDir, "git", "fetch", "--unshallow"))
-		if rv != nil {
-			return rv
-		}
-		return exec.Run(exec.Cmd(repoDir, "git", "fetch", "--tags", "--force"))
+	if _, err := os.Stat(filepath.Join(repoDir, ".git", "shallow")); err != nil {
+		return nil // not a shallow repo, everything is fine
 	}
-	return nil
+
+	cmd := exec.Command("git", "fetch", "--unshallow")
+	cmd.Dir = repoDir
+	if err := executils.Run(cmd); err != nil {
+		return err
+	}
+
+	cmd = exec.Command("git", "fetch", "--tags", "--force")
+	cmd.Dir = repoDir
+	return executils.Run(cmd)
 }
