@@ -6,10 +6,20 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
+
+func copyToWriter(filename string, w io.Writer) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
+}
 
 func TarGzip(chdir string, prefix string, entries []string, out io.Writer) error {
 	gz := gzip.NewWriter(out)
@@ -41,16 +51,7 @@ func TarGzip(chdir string, prefix string, entries []string, out io.Writer) error
 			return err
 		}
 
-		content, err := ioutil.ReadFile(entryFile)
-		if err != nil {
-			return err
-		}
-
-		if _, err := tw.Write(content); err != nil {
-			return err
-		}
-
-		if err := tw.Flush(); err != nil {
+		if err := copyToWriter(entryFile, tw); err != nil {
 			return err
 		}
 	}
@@ -79,16 +80,7 @@ func Zip(chdir string, prefix string, entries []string, out io.Writer) error {
 			return err
 		}
 
-		content, err := ioutil.ReadFile(entryFile)
-		if err != nil {
-			return err
-		}
-
-		if _, err := f.Write(content); err != nil {
-			return err
-		}
-
-		if err := zw.Flush(); err != nil {
+		if err := copyToWriter(entryFile, f); err != nil {
 			return err
 		}
 	}
