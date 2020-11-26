@@ -1,7 +1,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -22,16 +22,18 @@ type Target struct {
 }
 
 func Read(filename string) (*Config, error) {
-	var conf Config
+	conf := &Config{}
 
-	configContent, err := ioutil.ReadFile(filename)
+	f, err := os.Open(filename)
 	if err != nil {
-		return &conf, nil
+		// must work fine without config
+		return conf, nil
 	}
+	defer f.Close()
 
-	if err := yaml.Unmarshal(configContent, &conf); err != nil {
+	if err := yaml.NewDecoder(f).Decode(conf); err != nil {
 		return nil, err
 	}
 
-	return &conf, nil
+	return conf, nil
 }
