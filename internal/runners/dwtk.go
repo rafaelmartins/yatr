@@ -11,10 +11,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/pkg/compress"
-	"github.com/rafaelmartins/yatr/pkg/exec"
-	"github.com/rafaelmartins/yatr/pkg/fs"
-	"github.com/rafaelmartins/yatr/pkg/git"
+	"github.com/rafaelmartins/yatr/internal/compress"
+	"github.com/rafaelmartins/yatr/internal/exec"
+	"github.com/rafaelmartins/yatr/internal/fs"
+	"github.com/rafaelmartins/yatr/internal/git"
 )
 
 var (

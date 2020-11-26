@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/pkg/runners"
+	"github.com/rafaelmartins/yatr/internal/runners"
 )
 
 type Publisher interface {

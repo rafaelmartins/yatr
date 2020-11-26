@@ -7,11 +7,11 @@ import (
 	"path"
 	"text/template"
 
-	"github.com/rafaelmartins/yatr/pkg/config"
-	"github.com/rafaelmartins/yatr/pkg/fs"
-	"github.com/rafaelmartins/yatr/pkg/git"
-	"github.com/rafaelmartins/yatr/pkg/publishers"
-	"github.com/rafaelmartins/yatr/pkg/runners"
+	"github.com/rafaelmartins/yatr/internal/config"
+	"github.com/rafaelmartins/yatr/internal/fs"
+	"github.com/rafaelmartins/yatr/internal/git"
+	"github.com/rafaelmartins/yatr/internal/publishers"
+	"github.com/rafaelmartins/yatr/internal/runners"
 )
 
 func main() {

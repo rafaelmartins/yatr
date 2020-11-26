@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/pkg/exec"
+	"github.com/rafaelmartins/yatr/internal/exec"
 )
 
 func Version(repoDir string) string {

@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/pkg/exec"
+	"github.com/rafaelmartins/yatr/internal/exec"
 )
 
 var autotoolsDistExts = []string{

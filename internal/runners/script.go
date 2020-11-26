@@ -6,7 +6,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/rafaelmartins/yatr/pkg/git"
+	"github.com/rafaelmartins/yatr/internal/git"
 )
 
 type scriptRunner struct{}

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/pkg/runners"
+	"github.com/rafaelmartins/yatr/internal/runners"
 )
 
 type distfilesApiPublisher struct {

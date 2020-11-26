@@ -15,17 +15,14 @@ jobs:
 
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
-          go-version: 1.14
-        id: go
+          go-version: 1.15
 
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Build yatr
-        env:
-          GO111MODULE: "on"
         run: go build -x -v ./cmd/yatr
 
       - name: Run yatr

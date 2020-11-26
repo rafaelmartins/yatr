@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/rafaelmartins/yatr/pkg/exec"
+	"github.com/rafaelmartins/yatr/internal/exec"
 )
 
 type Ctx struct {
