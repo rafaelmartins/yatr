@@ -8,7 +8,7 @@ import (
 )
 
 func Run(cmd *exec.Cmd) error {
-	log.Printf("    Running command: %q", append([]string{cmd.Path}, cmd.Args...))
+	log.Printf("    Running command: %q", cmd.Args)
 	if cmd.Dir != "" {
 		log.Println("          Directory:", cmd.Dir)
 	}
@@ -17,7 +17,7 @@ func Run(cmd *exec.Cmd) error {
 		cmd.Stdout = os.Stdout
 	}
 	if cmd.Stderr == nil {
-		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
 	}
 
 	err := cmd.Run()
