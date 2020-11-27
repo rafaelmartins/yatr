@@ -6,20 +6,20 @@ import (
 	"strings"
 
 	"github.com/rafaelmartins/yatr/internal/publishers/distfiles_api"
-	"github.com/rafaelmartins/yatr/internal/runners"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
 
 type Publisher interface {
 	Name() string
-	Detect(ctx *runners.Ctx) bool
-	Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error
+	Detect(ctx *types.Ctx) bool
+	Publish(ctx *types.Ctx, proj *types.Project, archives []string, pattern string) error
 }
 
 var publishers = []Publisher{
 	&distfiles_api.DistfilesApiPublisher{},
 }
 
-func Get(ctx *runners.Ctx) (Publisher, error) {
+func Get(ctx *types.Ctx) (Publisher, error) {
 
 	// publisher disabled by the user
 	if v := strings.ToLower(os.Getenv("DISABLE_PUBLISHER")); v == "1" || v == "true" || v == "on" {

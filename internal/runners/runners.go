@@ -9,36 +9,30 @@ import (
 	"runtime"
 
 	"github.com/rafaelmartins/yatr/internal/executils"
+	"github.com/rafaelmartins/yatr/internal/runners/autotools"
+	"github.com/rafaelmartins/yatr/internal/runners/dwtk"
+	"github.com/rafaelmartins/yatr/internal/runners/golang"
+	"github.com/rafaelmartins/yatr/internal/runners/script"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
-
-type Ctx struct {
-	TargetName string
-	SrcDir     string
-	BuildDir   string
-}
-
-type Project struct {
-	Name    string
-	Version string
-}
 
 type Runner interface {
 	Name() string
-	Detect(ctx *Ctx) bool
-	Configure(ctx *Ctx, args []string) (*Project, error)
-	Task(ctx *Ctx, proj *Project, args []string) error
-	Collect(ctx *Ctx, proj *Project, args []string) ([]string, error)
+	Detect(ctx *types.Ctx) bool
+	Configure(ctx *types.Ctx, args []string) (*types.Project, error)
+	Task(ctx *types.Ctx, proj *types.Project, args []string) error
+	Collect(ctx *types.Ctx, proj *types.Project, args []string) ([]string, error)
 }
 
 var runners = []Runner{
-	&autotoolsRunner{},
-	&golangRunner{},
-	&dwtkRunner{},
-	&scriptRunner{},
+	&autotools.AutotoolsRunner{},
+	&golang.GolangRunner{},
+	&dwtk.DwtkRunner{},
+	&script.ScriptRunner{},
 }
 
-func Get(targetName string, srcDir string, buildDir string) (Runner, *Ctx) {
-	ctx := &Ctx{
+func Get(targetName string, srcDir string, buildDir string) (Runner, *types.Ctx) {
+	ctx := &types.Ctx{
 		TargetName: targetName,
 		SrcDir:     srcDir,
 		BuildDir:   buildDir,
@@ -57,7 +51,7 @@ func Get(targetName string, srcDir string, buildDir string) (Runner, *Ctx) {
 	return nil, nil
 }
 
-func RunTargetScript(ctx *Ctx, proj *Project, taskScript string, taskArgs []string) error {
+func RunTargetScript(ctx *types.Ctx, proj *types.Project, taskScript string, taskArgs []string) error {
 	if !path.IsAbs(taskScript) {
 		taskScript = filepath.Join(ctx.SrcDir, taskScript)
 	}

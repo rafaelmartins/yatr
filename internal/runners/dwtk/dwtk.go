@@ -1,4 +1,4 @@
-package runners
+package dwtk
 
 import (
 	"fmt"
@@ -15,6 +15,7 @@ import (
 	"github.com/rafaelmartins/yatr/internal/executils"
 	"github.com/rafaelmartins/yatr/internal/fs"
 	"github.com/rafaelmartins/yatr/internal/git"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
 
 var (
@@ -22,28 +23,28 @@ var (
 	reAvrTarget = regexp.MustCompile(`^dist-([a-z0-9]+)(-debug)?$`)
 )
 
-type dwtkRunner struct {
+type DwtkRunner struct {
 	Prefix string
 }
 
-func (d *dwtkRunner) Name() string {
+func (d *DwtkRunner) Name() string {
 	return "dwtk"
 }
 
-func (d *dwtkRunner) Detect(ctx *Ctx) bool {
+func (d *DwtkRunner) Detect(ctx *types.Ctx) bool {
 	path := filepath.Join(ctx.SrcDir, "dwtk-config.mk")
 	_, err := os.Stat(path)
 	return err == nil
 }
 
-func (d *dwtkRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
-	return &Project{
+func (d *DwtkRunner) Configure(ctx *types.Ctx, args []string) (*types.Project, error) {
+	return &types.Project{
 		Name:    filepath.Base(ctx.SrcDir),
 		Version: git.Version(ctx.SrcDir),
 	}, nil
 }
 
-func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
+func (d *DwtkRunner) Task(ctx *types.Ctx, proj *types.Project, args []string) error {
 	matches := reAvrTarget.FindStringSubmatch(ctx.TargetName)
 	if len(matches) == 0 {
 		return fmt.Errorf("unsupported target: %s", ctx.TargetName)
@@ -174,6 +175,6 @@ func (d *dwtkRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	return compress.TarGzip(root, d.Prefix, toCompress, f)
 }
 
-func (d *dwtkRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
+func (d *DwtkRunner) Collect(ctx *types.Ctx, proj *types.Project, args []string) ([]string, error) {
 	return []string{fmt.Sprintf("%s.tar.gz", d.Prefix)}, nil
 }

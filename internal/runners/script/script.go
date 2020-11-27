@@ -1,4 +1,4 @@
-package runners
+package script
 
 import (
 	"fmt"
@@ -7,19 +7,20 @@ import (
 	"time"
 
 	"github.com/rafaelmartins/yatr/internal/git"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
 
-type scriptRunner struct{}
+type ScriptRunner struct{}
 
-func (s *scriptRunner) Name() string {
+func (s *ScriptRunner) Name() string {
 	return "script"
 }
 
-func (s *scriptRunner) Detect(ctx *Ctx) bool {
+func (s *ScriptRunner) Detect(ctx *types.Ctx) bool {
 	return true
 }
 
-func (s *scriptRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
+func (s *ScriptRunner) Configure(ctx *types.Ctx, args []string) (*types.Project, error) {
 	projectName := path.Base(ctx.SrcDir)
 
 	t := "version-git"
@@ -42,14 +43,14 @@ func (s *scriptRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 		projectVersion = git.Version(ctx.SrcDir)
 	}
 
-	return &Project{Name: projectName, Version: projectVersion}, nil
+	return &types.Project{Name: projectName, Version: projectVersion}, nil
 }
 
-func (s *scriptRunner) Task(ctx *Ctx, proj *Project, args []string) error {
+func (s *ScriptRunner) Task(ctx *types.Ctx, proj *types.Project, args []string) error {
 	return fmt.Errorf("script runner does not have a default task, please set task_script in your config")
 }
 
-func (s *scriptRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
+func (s *ScriptRunner) Collect(ctx *types.Ctx, proj *types.Project, args []string) ([]string, error) {
 	files, err := ioutil.ReadDir(ctx.BuildDir)
 	if err != nil {
 		return nil, err

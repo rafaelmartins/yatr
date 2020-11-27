@@ -1,4 +1,4 @@
-package runners
+package golang
 
 import (
 	"bufio"
@@ -15,6 +15,7 @@ import (
 	"github.com/rafaelmartins/yatr/internal/executils"
 	"github.com/rafaelmartins/yatr/internal/fs"
 	"github.com/rafaelmartins/yatr/internal/git"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
 
 var validOSArch = []string{
@@ -64,7 +65,7 @@ var validOSArch = []string{
 var validDistTarget = regexp.MustCompile(`^dist-(([a-z0-9]+)-([a-z0-9]+))$`)
 var mainPackage = regexp.MustCompile(`^[ \t]*package[ \t]+main[ \t]*$`)
 
-type golangRunner struct {
+type GolangRunner struct {
 	GoTool    string
 	IsWindows bool
 	OsArch    string
@@ -78,7 +79,7 @@ func supportModules() bool {
 	return cmd.Run() == nil
 }
 
-func generateFullLicense(ctx *Ctx) (bool, error) {
+func generateFullLicense(ctx *types.Ctx) (bool, error) {
 	gomodFile := filepath.Join(ctx.SrcDir, "go.mod")
 	vendorDir := filepath.Join(ctx.SrcDir, "vendor")
 
@@ -140,7 +141,7 @@ func generateFullLicense(ctx *Ctx) (bool, error) {
 	return true, nil
 }
 
-func getMainPackages(ctx *Ctx) []string {
+func getMainPackages(ctx *types.Ctx) []string {
 	rv := []string{}
 
 	filepath.Walk(ctx.SrcDir, func(path string, info os.FileInfo, err error) error {
@@ -185,11 +186,11 @@ func getMainPackages(ctx *Ctx) []string {
 	return rv
 }
 
-func (r *golangRunner) Name() string {
+func (r *GolangRunner) Name() string {
 	return "golang"
 }
 
-func (r *golangRunner) Detect(ctx *Ctx) bool {
+func (r *GolangRunner) Detect(ctx *types.Ctx) bool {
 	found := false
 
 	filepath.Walk(ctx.SrcDir, func(path string, info os.FileInfo, err error) error {
@@ -215,7 +216,7 @@ func (r *golangRunner) Detect(ctx *Ctx) bool {
 	return found
 }
 
-func (r *golangRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
+func (r *GolangRunner) Configure(ctx *types.Ctx, args []string) (*types.Project, error) {
 	// guess project name
 	projectName := path.Base(ctx.SrcDir)
 
@@ -226,10 +227,10 @@ func (r *golangRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 		os.Setenv("GO111MODULE", "on")
 	}
 
-	return &Project{Name: projectName, Version: projectVersion}, nil
+	return &types.Project{Name: projectName, Version: projectVersion}, nil
 }
 
-func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
+func (r *GolangRunner) Task(ctx *types.Ctx, proj *types.Project, args []string) error {
 	if ctx.TargetName == "distcheck" {
 		r.GoTool = "test"
 	} else if strings.HasPrefix(ctx.TargetName, "dist-") {
@@ -298,7 +299,7 @@ func (r *golangRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	return nil
 }
 
-func (r *golangRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
+func (r *GolangRunner) Collect(ctx *types.Ctx, proj *types.Project, args []string) ([]string, error) {
 	var builtFiles []string
 
 	if r.GoTool == "build" {

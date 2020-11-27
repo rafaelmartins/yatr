@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rafaelmartins/yatr/internal/runners"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
 
 type DistfilesApiPublisher struct {
@@ -24,7 +24,7 @@ func (p *DistfilesApiPublisher) Name() string {
 	return "distfiles-api"
 }
 
-func (p *DistfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
+func (p *DistfilesApiPublisher) Detect(ctx *types.Ctx) bool {
 	if url := strings.TrimSpace(os.Getenv("DISTFILES_URL")); url != "" {
 		p.Url = url
 		return true
@@ -32,7 +32,7 @@ func (p *DistfilesApiPublisher) Detect(ctx *runners.Ctx) bool {
 	return false
 }
 
-func (p *DistfilesApiPublisher) Publish(ctx *runners.Ctx, proj *runners.Project, archives []string, pattern string) error {
+func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, archives []string, pattern string) error {
 	for _, archive := range archives {
 		log.Println("    - Uploading archive:", archive)
 

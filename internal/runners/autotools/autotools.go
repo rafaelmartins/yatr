@@ -1,4 +1,4 @@
-package runners
+package autotools
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/rafaelmartins/yatr/internal/executils"
+	"github.com/rafaelmartins/yatr/internal/types"
 )
 
 var autotoolsDistExts = []string{
@@ -27,20 +28,20 @@ var autotoolsDistExts = []string{
 
 var configLogNameVersion = regexp.MustCompile(`PACKAGE_(TARNAME|VERSION) *= *['"](.*)['"]`)
 
-type autotoolsRunner struct{}
+type AutotoolsRunner struct{}
 
-func getAutotoolsProject(ctx *Ctx) *Project {
+func getAutotoolsProject(ctx *types.Ctx) *types.Project {
 	projectName := "UNKNOWN"
 	projectVersion := "UNKNOWN"
 
 	content, err := ioutil.ReadFile(filepath.Join(ctx.BuildDir, "config.log"))
 	if err != nil {
-		return &Project{Name: projectName, Version: projectVersion}
+		return &types.Project{Name: projectName, Version: projectVersion}
 	}
 
 	matches := configLogNameVersion.FindAllStringSubmatch(string(content), -1)
 	if matches == nil {
-		return &Project{Name: projectName, Version: projectVersion}
+		return &types.Project{Name: projectName, Version: projectVersion}
 	}
 
 	for _, match := range matches {
@@ -51,20 +52,20 @@ func getAutotoolsProject(ctx *Ctx) *Project {
 		}
 	}
 
-	return &Project{Name: projectName, Version: projectVersion}
+	return &types.Project{Name: projectName, Version: projectVersion}
 }
 
-func (r *autotoolsRunner) Name() string {
+func (r *AutotoolsRunner) Name() string {
 	return "autotools"
 }
 
-func (r *autotoolsRunner) Detect(ctx *Ctx) bool {
+func (r *AutotoolsRunner) Detect(ctx *types.Ctx) bool {
 	path := path.Join(ctx.SrcDir, "configure.ac")
 	_, err := os.Stat(path)
 	return err == nil
 }
 
-func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
+func (r *AutotoolsRunner) Configure(ctx *types.Ctx, args []string) (*types.Project, error) {
 	cmd := exec.Command("autoreconf", "--warnings=all", "--install", "--force")
 	cmd.Dir = ctx.SrcDir
 	if err := executils.Run(cmd); err != nil {
@@ -93,7 +94,7 @@ func (r *autotoolsRunner) Configure(ctx *Ctx, args []string) (*Project, error) {
 	return getAutotoolsProject(ctx), err
 }
 
-func (r *autotoolsRunner) Task(ctx *Ctx, proj *Project, args []string) error {
+func (r *AutotoolsRunner) Task(ctx *types.Ctx, proj *types.Project, args []string) error {
 	jobs := fmt.Sprintf("-j%d", runtime.NumCPU()+1)
 	makeArgs := append(append([]string{jobs}, args...), ctx.TargetName)
 
@@ -102,7 +103,7 @@ func (r *autotoolsRunner) Task(ctx *Ctx, proj *Project, args []string) error {
 	return executils.Run(cmd)
 }
 
-func (r *autotoolsRunner) Collect(ctx *Ctx, proj *Project, args []string) ([]string, error) {
+func (r *AutotoolsRunner) Collect(ctx *types.Ctx, proj *types.Project, args []string) ([]string, error) {
 	files, err := ioutil.ReadDir(ctx.BuildDir)
 	if err != nil {
 		return nil, err
