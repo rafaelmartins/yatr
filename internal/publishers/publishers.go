@@ -12,6 +12,7 @@ import (
 type Publisher interface {
 	Name() string
 	Detect(ctx *types.Ctx) bool
+	SetRelease(release bool)
 	Publish(ctx *types.Ctx, proj *types.Project, archives []string, pattern string) error
 }
 
@@ -30,13 +31,18 @@ func Get(ctx *types.Ctx) (Publisher, error) {
 	// - don't run on pull requests
 	// - only run for master and tags
 
+	isRelease := false
+
 	// travis
 	if os.Getenv("TRAVIS") == "true" {
 		if os.Getenv("TRAVIS_PULL_REQUEST") != "false" {
 			return nil, fmt.Errorf("disabled, pull request")
 		}
-		if os.Getenv("TRAVIS_BRANCH") != "master" && len(os.Getenv("TRAVIS_TAG")) == 0 {
+		if os.Getenv("TRAVIS_BRANCH") != "master" && os.Getenv("TRAVIS_TAG") == "" {
 			return nil, fmt.Errorf("disabled, not master branch nor a git tag")
+		}
+		if os.Getenv("TRAVIS_TAG") != "" {
+			isRelease = true
 		}
 	}
 
@@ -49,10 +55,14 @@ func Get(ctx *types.Ctx) (Publisher, error) {
 		} else {
 			return nil, fmt.Errorf("disabled, not push nor create event")
 		}
+		if strings.HasPrefix(os.Getenv("GITHUB_REF"), "refs/tags/") {
+			isRelease = true
+		}
 	}
 
 	for _, v := range publishers {
 		if v.Detect(ctx) {
+			v.SetRelease(isRelease)
 			return v, nil
 		}
 	}

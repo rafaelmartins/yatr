@@ -17,7 +17,8 @@ import (
 )
 
 type DistfilesApiPublisher struct {
-	Url string
+	url     string
+	release bool
 }
 
 func (p *DistfilesApiPublisher) Name() string {
@@ -26,10 +27,14 @@ func (p *DistfilesApiPublisher) Name() string {
 
 func (p *DistfilesApiPublisher) Detect(ctx *types.Ctx) bool {
 	if url := strings.TrimSpace(os.Getenv("DISTFILES_URL")); url != "" {
-		p.Url = url
+		p.url = url
 		return true
 	}
 	return false
+}
+
+func (p *DistfilesApiPublisher) SetRelease(release bool) {
+	p.release = release
 }
 
 func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, archives []string, pattern string) error {
@@ -60,6 +65,11 @@ func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, arc
 			return err
 		}
 
+		releaseStr := "false"
+		if p.release {
+			releaseStr = "true"
+		}
+
 		extract := false
 		if len(pattern) > 0 {
 			var err error
@@ -78,6 +88,7 @@ func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, arc
 			"project": proj.Name,
 			"version": proj.Version,
 			"sha512":  fmt.Sprintf("%x  %s", checksum.Sum(nil), archive),
+			"release": releaseStr,
 			"extract": extractStr,
 		}
 
@@ -91,9 +102,9 @@ func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, arc
 			return err
 		}
 
-		resp, err := http.Post(p.Url, writer.FormDataContentType(), body)
+		resp, err := http.Post(p.url, writer.FormDataContentType(), body)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error: Failed to submit distfile: %s", archive)
 		}
 
 		bodyContent, err := ioutil.ReadAll(resp.Body)
