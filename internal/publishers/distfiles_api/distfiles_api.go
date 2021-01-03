@@ -104,7 +104,7 @@ func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, arc
 
 		resp, err := http.Post(p.url, writer.FormDataContentType(), body)
 		if err != nil {
-			return fmt.Errorf("Error: Failed to submit distfile: %s", archive)
+			return fmt.Errorf("Failed to submit distfile: %s", archive)
 		}
 
 		bodyContent, err := ioutil.ReadAll(resp.Body)
@@ -117,7 +117,7 @@ func (p *DistfilesApiPublisher) Publish(ctx *types.Ctx, proj *types.Project, arc
 
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf(
-				"Error: Failed to upload file to distfiles api: %s (%d: %s)",
+				"Failed to upload file to distfiles api: %s (%d: %s)",
 				archive,
 				resp.StatusCode,
 				bodyString,
