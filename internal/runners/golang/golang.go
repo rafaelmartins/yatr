@@ -193,6 +193,18 @@ func (r *GolangRunner) Name() string {
 func (r *GolangRunner) Detect(ctx *types.Ctx) bool {
 	found := false
 
+	if !func() bool {
+		if ctx.TargetName == "distcheck" {
+			return true
+		}
+		if strings.HasPrefix(ctx.TargetName, "dist-") {
+			return true
+		}
+		return false
+	}() {
+		return false
+	}
+
 	filepath.Walk(ctx.SrcDir, func(path string, info os.FileInfo, err error) error {
 		if found {
 			return nil
